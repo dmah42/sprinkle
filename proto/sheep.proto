@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package flock;
+
+message StatusRequest {
+}
+
+message StatusResponse {
+  string ip = 1;
+  string hostname = 2;
+  int64 total_ram = 3;
+  int64 available_ram = 4;
+}
+
+message RunRequest {
+  // TODO: fetch
+  string cmd = 1;
+  int64 ram = 2;
+}
+
+message RunResponse {
+  int64 id = 1;
+}
+
+message JobRequest {
+  int64 id = 1;
+}
+
+message JobResponse {
+  int64 start_time = 1;
+  bool exited = 2;
+  bool success = 3;
+  RUsage rusage = 4;
+}
+
+message Timeval {
+  int64 sec = 1;
+  int64 usec = 2;
+}
+
+message RUsage {
+  Timeval utime = 1;
+  Timeval stime = 2;
+  int64 maxrss = 3;
+}
+
+service Sheep {
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+  rpc Run(RunRequest) returns (RunResponse) {}
+  rpc Job(JobRequest) returns (JobResponse) {}
+}
