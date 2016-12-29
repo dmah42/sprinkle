@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 protoc -Iproto/ proto/sheep.proto --go_out=plugins=grpc:proto
 go build github.com/dominichamon/flock/proto
