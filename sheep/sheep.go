@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"google.golang.org/grpc"
-
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
 	pb "github.com/dominichamon/flock/proto"
 )
@@ -38,6 +38,14 @@ type job struct {
 type sheepServer struct {
 }
 
+func ram() (uint64, uint64, error) {
+	var si syscall.Sysinfo_t
+	if err := syscall.Sysinfo(&si); err != nil {
+		return 0, 0, err
+	}
+	return si.Totalram, si.Freeram, nil
+}
+
 func (s *sheepServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.StatusResponse, error) {
 	name, err := os.Hostname()
 	if err != nil {
@@ -49,19 +57,27 @@ func (s *sheepServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Status
 		return nil, err
 	}
 
-	// TODO: use syscall.Sysinfo to get ram
+	total, free, err := ram()
+	if err != nil {
+		return nil, err
+	}
 
 	return &pb.StatusResponse{
 		Ip:       addrs[0],
 		Hostname: name,
+		TotalRam: total,
+		FreeRam:  free,
 	}, nil
 }
 
 func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunResponse, error) {
 	// TODO: get available ram
-	avail := int64(0)
-	if req.Ram < avail {
-		return nil, fmt.Errorf("not enough RAM; %d vs %d", avail, req.Ram)
+	_, fr, err := ram()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine free RAM: %s", err)
+	}
+	if req.Ram < fr {
+		return nil, fmt.Errorf("not enough RAM; %d vs %d", fr, req.Ram)
 	}
 
 	j := job{
@@ -72,13 +88,13 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	j.cmd = exec.Command(scmd[0], scmd[1:]...)
 	stdout, err := j.cmd.StdoutPipe()
 	if err != nil {
-		fmt.Printf("Unable to attach to stdout for %q: %s", req.Cmd, err)
+		glog.Warningf("Unable to attach to stdout for %q: %s", req.Cmd, err)
 	}
 	stderr, err := j.cmd.StderrPipe()
 	if err != nil {
-		fmt.Printf("Unable to attach to stderr for %q: %s", req.Cmd, err)
+		glog.Warningf("Unable to attach to stderr for %q: %s", req.Cmd, err)
 	}
-	fmt.Printf("Running %q\n", req.Cmd)
+	glog.Infof("Running %q", req.Cmd)
 	err = j.cmd.Start()
 	if err != nil {
 		return nil, fmt.Errorf("failed to run %q: %q", req.Cmd, err)
@@ -86,7 +102,7 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	go func() {
 		out, err := ioutil.ReadAll(stdout)
 		if err != nil {
-			fmt.Println(err)
+			glog.Error(err)
 			j.stdout = fmt.Sprintf("[E] Failed to read stdout for %q: %s", req.Cmd, err)
 		} else {
 			j.stdout = string(out)
@@ -94,7 +110,7 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 
 		out, err = ioutil.ReadAll(stderr)
 		if err != nil {
-			fmt.Println(err)
+			glog.Error(err)
 			j.stderr = fmt.Sprintf("[E] Failed to read stderr for %q: %s", req.Cmd, err)
 		} else {
 			j.stderr = string(out)
@@ -147,6 +163,6 @@ func main() {
 	}
 	s := grpc.NewServer()
 	pb.RegisterSheepServer(s, &sheepServer{})
-	fmt.Printf("listening on %d\n", *port)
+	glog.Infof("listening on %d", *port)
 	s.Serve(l)
 }

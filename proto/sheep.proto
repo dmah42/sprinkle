@@ -8,14 +8,14 @@ message StatusRequest {
 message StatusResponse {
   string ip = 1;
   string hostname = 2;
-  int64 total_ram = 3;
-  int64 free_ram = 4;
+  uint64 total_ram = 3;
+  uint64 free_ram = 4;
 }
 
 message RunRequest {
   // TODO: fetch
   string cmd = 1;
-  int64 ram = 2;
+  uint64 ram = 2;
 }
 
 message RunResponse {
