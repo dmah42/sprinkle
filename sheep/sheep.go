@@ -24,10 +24,20 @@ import (
 var (
 	port = flag.Int("port", 5432, "The port on which to listen")
 
-	jobId  int64
-	jobsMu sync.RWMutex
-	jobs   map[int64]job
+	jobId int64
+	jobs  jobMap
 )
+
+type jobMap struct {
+	sync.RWMutex
+	jobs map[int64]job
+}
+
+func init() {
+	jobs.Lock()
+	jobs.jobs = make(map[int64]job)
+	jobs.Unlock()
+}
 
 type job struct {
 	start          time.Time
@@ -76,8 +86,8 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine free RAM: %s", err)
 	}
-	if req.Ram < fr {
-		return nil, fmt.Errorf("not enough RAM; %d vs %d", fr, req.Ram)
+	if req.Ram > fr {
+		return nil, fmt.Errorf("not enough RAM; %d vs %d", req.Ram, fr)
 	}
 
 	j := job{
@@ -121,38 +131,43 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 		}
 	}()
 
-	jobsMu.Lock()
+	jobs.Lock()
 	jobId += 1
 	id := jobId
-	jobs[id] = j
-	jobsMu.Unlock()
+	jobs.jobs[id] = j
+	jobs.Unlock()
 
 	return &pb.RunResponse{Id: id}, nil
 }
 
 func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobResponse, error) {
-	jobsMu.RLock()
-	job := jobs[req.Id]
-	jobsMu.RUnlock()
+	jobs.RLock()
+	job := jobs.jobs[req.Id]
+	jobs.RUnlock()
 
-	su := job.cmd.ProcessState.SysUsage().(*syscall.Rusage)
-
-	return &pb.JobResponse{
+	resp := &pb.JobResponse{
 		StartTime: job.start.Unix(),
-		Exited:    job.cmd.ProcessState.Exited(),
-		Success:   job.cmd.ProcessState.Success(),
-		Rusage: &pb.RUsage{
-			Utime: &pb.Timeval{
-				Sec:  su.Utime.Sec,
-				Usec: su.Utime.Usec,
-			},
-			Stime: &pb.Timeval{
-				Sec:  su.Stime.Sec,
-				Usec: su.Stime.Usec,
-			},
-			Maxrss: su.Maxrss,
-		},
-	}, nil
+	}
+	if job.cmd.ProcessState != nil {
+		resp.Exited = job.cmd.ProcessState.Exited()
+		resp.Success = job.cmd.ProcessState.Success()
+
+		su := job.cmd.ProcessState.SysUsage().(*syscall.Rusage)
+		if su != nil {
+			resp.Rusage = &pb.RUsage{
+				Utime: &pb.Timeval{
+					Sec:  su.Utime.Sec,
+					Usec: su.Utime.Usec,
+				},
+				Stime: &pb.Timeval{
+					Sec:  su.Stime.Sec,
+					Usec: su.Stime.Usec,
+				},
+				Maxrss: su.Maxrss,
+			}
+		}
+	}
+	return resp, nil
 }
 
 func main() {
