@@ -9,7 +9,7 @@ message StatusResponse {
   string ip = 1;
   string hostname = 2;
   int64 total_ram = 3;
-  int64 available_ram = 4;
+  int64 free_ram = 4;
 }
 
 message RunRequest {
