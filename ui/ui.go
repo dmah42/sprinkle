@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"html"
@@ -26,7 +27,7 @@ var (
 
 type clientMap struct {
 	sync.RWMutex
-	clients map[*client]bool
+	clients map[string]*client
 }
 
 type client struct {
@@ -39,6 +40,24 @@ type client struct {
 
 func (c client) close() error {
 	return c.conn.Close()
+}
+
+func (c client) key() (string, error) {
+	if c.Status == nil {
+		return "", errors.New("No status available")
+	}
+	return net.JoinHostPort(c.Status.Hostname, fmt.Sprintf("%d", c.Port)), nil
+}
+
+func (c *client) updateStatus(ctx context.Context) error {
+	status, err := c.stub.Status(ctx, &pb.StatusRequest{})
+	if err != nil {
+		return err
+	}
+	glog.Infof("Status of %+v: %+v", c, status)
+	// TODO: store the status in a separate map?
+	c.Status = status
+	return nil
 }
 
 func newClient(ip string, port int) (*client, error) {
@@ -54,7 +73,7 @@ func newClient(ip string, port int) (*client, error) {
 
 func init() {
 	clients.Lock()
-	clients.clients = make(map[*client]bool)
+	clients.clients = make(map[string]*client)
 	clients.Unlock()
 }
 
@@ -69,7 +88,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 		`<html><body>
 		<table>
 		<thead><th>IP</th><th>Host</th><th>Port</th><th>Total RAM</th><th>Free RAM</th></thead>
-		{{range $client, $unused := .}}
+		{{range $_, $client := .}}
 			<tr>
 				{{if $client.Status}}
 					<td>{{$client.Status.Ip}}</td>
@@ -101,7 +120,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func discovery() {
+func discovery(ctx context.Context) {
 	// TODO: discovery scan
 	for {
 
@@ -115,7 +134,13 @@ func discovery() {
 
 		glog.Infof("Connected to %+v", c)
 		clients.Lock()
-		clients.clients[c] = true
+		c.updateStatus(ctx)
+		k, err := c.key()
+		if err != nil {
+			glog.Error(err)
+			continue
+		}
+		clients.clients[k] = c
 		clients.Unlock()
 
 		// TODO: remove old clients
@@ -128,14 +153,12 @@ func status(ctx context.Context) {
 	for {
 		clients.Lock()
 
-		for c := range clients.clients {
-			status, err := c.stub.Status(ctx, &pb.StatusRequest{})
-			if err != nil {
-				glog.Warningf("Failed to get status for %+v: %s", c, err)
+		for k, c := range clients.clients {
+			if err := c.updateStatus(ctx); err != nil {
+				glog.Warningf("Failed to get status for %s: %s", k, err)
 				continue
 			}
-			glog.Infof("Status of %+v: %+v", c, status)
-			c.Status = status
+			glog.Infof("Status of %s: %+v", k, c.Status)
 		}
 
 		clients.Unlock()
@@ -147,8 +170,10 @@ func status(ctx context.Context) {
 func main() {
 	flag.Parse()
 
-	go discovery()
-	go status(context.Background())
+	ctx := context.Background()
+
+	go discovery(ctx)
+	go status(ctx)
 
 	http.HandleFunc("/", Index)
 	glog.Infof("listening on port %d", *port)
