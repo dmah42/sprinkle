@@ -48,4 +48,5 @@ service Sheep {
   rpc Status(StatusRequest) returns (StatusResponse) {}
   rpc Run(RunRequest) returns (RunResponse) {}
   rpc Job(JobRequest) returns (JobResponse) {}
+// TODO: rpc Logs(LogRequest) returns (LogResponse) {}
 }
