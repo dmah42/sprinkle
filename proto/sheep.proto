@@ -19,7 +19,7 @@ message RunRequest {
 }
 
 message RunResponse {
-  int64 id = 1;
+  int64 job_id = 1;
 }
 
 message JobRequest {
@@ -44,9 +44,25 @@ message RUsage {
   int64 maxrss = 3;
 }
 
+enum LogType {
+  STDOUT = 0;
+  STDERR = 1;
+  ALL = 2;
+}
+
+message LogRequest {
+  int64 job_id = 1;
+  LogType type = 2;
+}
+
+message LogResponse {
+  LogType type = 1;
+  string chunk = 2;
+}
+
 service Sheep {
   rpc Status(StatusRequest) returns (StatusResponse) {}
   rpc Run(RunRequest) returns (RunResponse) {}
   rpc Job(JobRequest) returns (JobResponse) {}
-// TODO: rpc Logs(LogRequest) returns (LogResponse) {}
+  rpc Logs(LogRequest) returns (stream LogResponse) {}
 }

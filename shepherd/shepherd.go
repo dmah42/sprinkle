@@ -68,7 +68,7 @@ func main() {
 		glog.Exit(err)
 	}
 
-	job := resp.Id
+	job := resp.JobId
 	glog.Infof("Running %d on %s", job, sheep.Id)
 	if *wait {
 		done := false

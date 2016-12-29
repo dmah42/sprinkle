@@ -137,7 +137,7 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	jobs.jobs[id] = j
 	jobs.Unlock()
 
-	return &pb.RunResponse{Id: id}, nil
+	return &pb.RunResponse{JobId: id}, nil
 }
 
 func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobResponse, error) {
@@ -168,6 +168,32 @@ func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespons
 		}
 	}
 	return resp, nil
+}
+
+func (s *sheepServer) Logs(req *pb.LogRequest, stream pb.Sheep_LogsServer) error {
+	jobs.RLock()
+	job, ok := jobs.jobs[req.JobId]
+	if !ok {
+		return fmt.Errorf("job %d not found", req.JobId)
+	}
+	defer jobs.RUnlock()
+	if req.Type == pb.LogType_STDOUT || req.Type == pb.LogType_ALL {
+		// chunk up stdout and stream them.
+		out := job.stdout
+		for _, s := range strings.Split(out, "\n") {
+			err := stream.Send(&pb.LogResponse{
+				Type:  pb.LogType_STDOUT,
+				Chunk: s,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if req.Type == pb.LogType_STDERR || req.Type == pb.LogType_ALL {
+		// chunk up stderr and stream them.
+	}
+	return nil
 }
 
 func main() {
