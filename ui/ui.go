@@ -2,19 +2,17 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"html"
 	"html/template"
-	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/dominichamon/flock"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 
 	pb "github.com/dominichamon/flock/proto"
 )
@@ -22,59 +20,44 @@ import (
 var (
 	port = flag.Int("port", 1248, "The port on which to listen")
 
-	clients clientMap
+	sheep  sheepMap
+	status map[string]*pb.StatusResponse
 )
 
-type clientMap struct {
+type sheepMap struct {
 	sync.RWMutex
-	clients map[string]*client
+	sheep map[string]*flock.Sheep
 }
 
-type client struct {
-	Status *pb.StatusResponse
-	Port   int
-
-	conn *grpc.ClientConn
-	stub pb.SheepClient
+func (m *sheepMap) add(s *flock.Sheep) {
+	m.Lock()
+	m.sheep[s.Id] = s
+	m.Unlock()
 }
 
-func (c client) close() error {
-	return c.conn.Close()
-}
-
-func (c client) key() (string, error) {
-	if c.Status == nil {
-		return "", errors.New("No status available")
+func (m *sheepMap) remove(s *flock.Sheep) error {
+	m.RLock()
+	defer m.RUnlock()
+	if _, ok := m.sheep[s.Id]; !ok {
+		return fmt.Errorf("sheep %q not found", s.Id)
 	}
-	return net.JoinHostPort(c.Status.Hostname, fmt.Sprintf("%d", c.Port)), nil
-}
 
-func (c *client) updateStatus(ctx context.Context) error {
-	status, err := c.stub.Status(ctx, &pb.StatusRequest{})
-	if err != nil {
-		return err
+	m.Lock()
+	defer m.Unlock()
+	if _, ok := m.sheep[s.Id]; !ok {
+		return fmt.Errorf("sheep %q not found", s.Id)
 	}
-	glog.Infof("Status of %+v: %+v", c, status)
-	// TODO: store the status in a separate map?
-	c.Status = status
+	delete(m.sheep, s.Id)
+
 	return nil
 }
 
-func newClient(ip string, port int) (*client, error) {
-	c := &client{Port: port}
-	conn, err := grpc.Dial(net.JoinHostPort(ip, fmt.Sprintf("%d", port)), grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	c.conn = conn
-	c.stub = pb.NewSheepClient(c.conn)
-	return c, nil
-}
-
 func init() {
-	clients.Lock()
-	clients.clients = make(map[string]*client)
-	clients.Unlock()
+	sheep.Lock()
+	sheep.sheep = make(map[string]*flock.Sheep)
+	sheep.Unlock()
+
+	status = make(map[string]*pb.StatusResponse)
 }
 
 func handleError(w http.ResponseWriter, code int, err error) {
@@ -87,22 +70,14 @@ func Index(w http.ResponseWriter, req *http.Request) {
 	t, err := template.New("index").Parse(
 		`<html><body>
 		<table>
-		<thead><th>IP</th><th>Host</th><th>Port</th><th>Total RAM</th><th>Free RAM</th></thead>
-		{{range $_, $client := .}}
+		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
+		{{range $id, $status := .}}
 			<tr>
-				{{if $client.Status}}
-					<td>{{$client.Status.Ip}}</td>
-					<td>{{$client.Status.Hostname}}</td>
-				{{else}}
-					<td>&lt;UNKNOWN&gt;</td>
-					<td>&lt;UNKNOWN&gt;</td>
-				{{end}}
-				<td>{{$client.Port}}</td>
-
-				{{if $client.Status}}
-					<td>{{$client.Status.TotalRam}}</td>
-					<td>{{$client.Status.FreeRam}}</td>
-				{{end}}
+				<td>{{$id}}</td>
+				<td>{{$status.Ip}}</td>
+				<td>{{$status.Hostname}}</td>
+				<td>{{$status.TotalRam}}</td>
+				<td>{{$status.FreeRam}}</td>
 			</tr>
 		{{end}}
 		</table>
@@ -112,9 +87,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	clients.RLock()
-	defer clients.RUnlock()
-	if err = t.Execute(w, clients.clients); err != nil {
+	if err = t.Execute(w, status); err != nil {
 		handleError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -124,44 +97,52 @@ func discovery(ctx context.Context) {
 	// TODO: discovery scan
 	for {
 
-		// TODO: add new clients
+		// TODO: add new sheep.
 
-		c, err := newClient("localhost", 5432)
+		s, err := flock.NewSheep("localhost", 5432)
 		if err != nil {
-			glog.Errorf("Failed to create new client: %s", err)
+			glog.Errorf("Failed to create new sheep: %s", err)
 			continue
 		}
 
-		glog.Infof("Connected to %+v", c)
-		clients.Lock()
-		c.updateStatus(ctx)
-		k, err := c.key()
-		if err != nil {
-			glog.Error(err)
-			continue
-		}
-		clients.clients[k] = c
-		clients.Unlock()
+		glog.Infof("Connected to %+v", s)
+		sheep.add(s)
 
-		// TODO: remove old clients
+		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
+		if err != nil {
+			glog.Warning(err)
+		}
+		glog.Infof("Status of %s: %+v", s.Id, stat)
+		// TODO: lock
+		status[s.Id] = stat
+
+		// TODO: remove old sheep
 
 		time.Sleep(5 * time.Minute)
 	}
 }
 
-func status(ctx context.Context) {
+func updateStatus(ctx context.Context) {
 	for {
-		clients.Lock()
+		sheep.RLock()
+		ss := make([]*flock.Sheep, len(sheep.sheep))
+		i := 0
+		for _, s := range sheep.sheep {
+			ss[i] = s
+			i++
+		}
+		sheep.RUnlock()
 
-		for k, c := range clients.clients {
-			if err := c.updateStatus(ctx); err != nil {
-				glog.Warningf("Failed to get status for %s: %s", k, err)
+		for _, s := range ss {
+			stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
+			if err != nil {
+				glog.Warningf("Failed to get status for %+v: %s", s, err)
 				continue
 			}
-			glog.Infof("Status of %s: %+v", k, c.Status)
+			glog.Infof("Status of %s: %+v", s.Id, stat)
+			// TODO: lock
+			status[s.Id] = stat
 		}
-
-		clients.Unlock()
 
 		time.Sleep(1 * time.Minute)
 	}
@@ -173,7 +154,7 @@ func main() {
 	ctx := context.Background()
 
 	go discovery(ctx)
-	go status(ctx)
+	go updateStatus(ctx)
 
 	http.HandleFunc("/", Index)
 	glog.Infof("listening on port %d", *port)
