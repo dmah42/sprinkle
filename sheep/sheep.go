@@ -43,6 +43,7 @@ type job struct {
 	start          time.Time
 	cmd            *exec.Cmd
 	stdout, stderr string
+	complete       bool
 }
 
 type sheepServer struct {
@@ -109,7 +110,18 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	if err != nil {
 		return nil, fmt.Errorf("failed to run %q: %q", req.Cmd, err)
 	}
+
+	jobs.Lock()
+	jobId += 1
+	id := jobId
+	jobs.jobs[id] = j
+	jobs.Unlock()
+
 	go func() {
+		jobs.RLock()
+		j := jobs.jobs[id]
+		jobs.RUnlock()
+
 		out, err := ioutil.ReadAll(stdout)
 		if err != nil {
 			glog.Error(err)
@@ -129,13 +141,16 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 		if err := j.cmd.Wait(); err != nil {
 			fmt.Println(err)
 		}
-	}()
 
-	jobs.Lock()
-	jobId += 1
-	id := jobId
-	jobs.jobs[id] = j
-	jobs.Unlock()
+		glog.Infof("Marking job %d as complete", id)
+		j.complete = true
+
+		glog.Info(j)
+
+		jobs.Lock()
+		jobs.jobs[id] = j
+		jobs.Unlock()
+	}()
 
 	return &pb.RunResponse{JobId: id}, nil
 }
@@ -170,18 +185,30 @@ func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespons
 	return resp, nil
 }
 
-func (s *sheepServer) Logs(req *pb.LogRequest, stream pb.Sheep_LogsServer) error {
-	jobs.RLock()
-	job, ok := jobs.jobs[req.JobId]
-	if !ok {
-		return fmt.Errorf("job %d not found", req.JobId)
+func (s *sheepServer) Logs(req *pb.LogsRequest, stream pb.Sheep_LogsServer) error {
+	var job job
+	for {
+		jobs.RLock()
+		var ok bool
+		job, ok = jobs.jobs[req.JobId]
+		if !ok {
+			return fmt.Errorf("job %d not found", req.JobId)
+		}
+		jobs.RUnlock()
+
+		if job.complete {
+			break
+		}
+		glog.Infof("Waiting for job %d to complete", req.JobId)
+		time.Sleep(3 * time.Second)
 	}
-	defer jobs.RUnlock()
-	if req.Type == pb.LogType_STDOUT || req.Type == pb.LogType_ALL {
+
+	if req.Type == pb.LogType_STDOUT || req.Type == pb.LogType_BOTH {
 		// chunk up stdout and stream them.
 		out := job.stdout
+		glog.Infof("out %q", out)
 		for _, s := range strings.Split(out, "\n") {
-			err := stream.Send(&pb.LogResponse{
+			err := stream.Send(&pb.LogsResponse{
 				Type:  pb.LogType_STDOUT,
 				Chunk: s,
 			})
@@ -190,8 +217,19 @@ func (s *sheepServer) Logs(req *pb.LogRequest, stream pb.Sheep_LogsServer) error
 			}
 		}
 	}
-	if req.Type == pb.LogType_STDERR || req.Type == pb.LogType_ALL {
+	if req.Type == pb.LogType_STDERR || req.Type == pb.LogType_BOTH {
 		// chunk up stderr and stream them.
+		out := job.stderr
+		glog.Infof("err %q", out)
+		for _, s := range strings.Split(out, "\n") {
+			err := stream.Send(&pb.LogsResponse{
+				Type:  pb.LogType_STDOUT,
+				Chunk: s,
+			})
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

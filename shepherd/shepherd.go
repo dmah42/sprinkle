@@ -3,7 +3,9 @@ package main
 
 import (
 	"flag"
+	"io"
 	"math"
+	"strings"
 
 	"github.com/dominichamon/flock"
 	"github.com/golang/glog"
@@ -79,6 +81,33 @@ func main() {
 			}
 			glog.Infof(".. %+v", resp)
 			done = resp.Exited
+		}
+
+		stream, err := sheep.Client.Logs(ctx, &pb.LogsRequest{JobId: job})
+		if err != nil {
+			glog.Exit(err)
+		}
+		var stdout, stderr []string
+		for {
+			chunk, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				glog.Exit(err)
+			}
+			switch chunk.Type {
+			case pb.LogType_STDOUT:
+				stdout = append(stdout, chunk.Chunk)
+			case pb.LogType_STDERR:
+				stderr = append(stderr, chunk.Chunk)
+			}
+		}
+		if len(stdout) != 0 {
+			glog.Info(strings.Join(stdout, ""))
+		}
+		if len(stderr) != 0 {
+			glog.Error(strings.Join(stderr, ""))
 		}
 	}
 }

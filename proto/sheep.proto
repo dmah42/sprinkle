@@ -45,17 +45,17 @@ message RUsage {
 }
 
 enum LogType {
-  STDOUT = 0;
-  STDERR = 1;
-  ALL = 2;
+  BOTH = 0;
+  STDOUT = 1;
+  STDERR = 2;
 }
 
-message LogRequest {
+message LogsRequest {
   int64 job_id = 1;
   LogType type = 2;
 }
 
-message LogResponse {
+message LogsResponse {
   LogType type = 1;
   string chunk = 2;
 }
@@ -64,5 +64,5 @@ service Sheep {
   rpc Status(StatusRequest) returns (StatusResponse) {}
   rpc Run(RunRequest) returns (RunResponse) {}
   rpc Job(JobRequest) returns (JobResponse) {}
-  rpc Logs(LogRequest) returns (stream LogResponse) {}
+  rpc Logs(LogsRequest) returns (stream LogsResponse) {}
 }
