@@ -2,10 +2,16 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"math"
+	"net"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dominichamon/flock"
 	"github.com/golang/glog"
@@ -18,11 +24,136 @@ var (
 	cmd  = flag.String("cmd", "", "The command to run")
 	ram  = flag.Uint64("ram", 0, "The amount of RAM to reserve for the command")
 	wait = flag.Bool("wait", true, "Whether to wait for the command to complete")
+	addr = flag.String("addr", "", "The multicast address to use for discovery")
+	port = flag.Int("port", 9998, "The port to listen on for discovery")
 )
 
 type client struct {
 	hostname string
 	port     int
+}
+
+func discoverSheep(addr string, port int, ips chan<- string) error {
+	// Listen first.
+	laddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return err
+	}
+
+	c, err := net.ListenUDP("udp", laddr)
+	if err != nil {
+		return err
+	}
+
+	glog.Infof("Discovery listening on %s", laddr)
+
+	var done bool
+
+	go func() {
+		tick := time.NewTicker(5 * time.Second)
+		select {
+		case <-tick.C:
+			glog.Info("Discovery timeout")
+			done = true
+			tick.Stop()
+		}
+	}()
+
+	go func() {
+		for !done {
+			b := make([]byte, 1024)
+			_, err := c.Read(b)
+			if err != nil {
+				glog.Error(err)
+				break
+			}
+
+			ips <- string(b)
+		}
+		c.Close()
+		close(ips)
+	}()
+
+	// Send out a ping.
+	if addr == "" {
+		return errors.New("expected valid addr")
+	}
+
+	udpaddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		return err
+	}
+
+	if !udpaddr.IP.IsMulticast() {
+		return fmt.Errorf("%q is not multicast", addr)
+	}
+
+	name, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	addrs, err := net.LookupHost(name)
+	if err != nil {
+		return err
+	}
+
+	glog.Info("Sending discovery ping on %s", udpaddr)
+
+	pc, err := net.DialUDP("udp", nil, udpaddr)
+	if err != nil {
+		return err
+	}
+	defer pc.Close()
+
+	_, err = pc.Write([]byte(net.JoinHostPort(addrs[0], fmt.Sprintf("%d", port))))
+	return err
+}
+
+func bestSheep(ctx context.Context, ram uint64, ips <-chan string) *flock.Sheep {
+	var sheep *flock.Sheep
+	bestFreeRam := uint64(math.Inf(1))
+
+	for ip := range ips {
+		glog.Infof("Discovered sheep at %s", ip)
+
+		host, port, err := net.SplitHostPort(ip)
+		if err != nil {
+			glog.Error(err)
+			continue
+		}
+
+		p, err := strconv.ParseInt(port, 10, 32)
+		if err != nil {
+			glog.Error(err)
+			continue
+		}
+
+		s, err := flock.NewSheep(host, int(p))
+		if err != nil {
+			glog.Error(err)
+			continue
+		}
+		defer func() {
+			if err := s.Close(); err != nil {
+				glog.Error(err)
+			}
+		}()
+
+		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
+		if err != nil {
+			glog.Errorf("failed to get status for %+v: %s", s, err)
+		}
+		glog.Infof("Status of %s [%s]: %+v", s.Id, ip, stat)
+
+		if stat.FreeRam > ram {
+			if sheep == nil || stat.FreeRam < bestFreeRam {
+				sheep = s
+				bestFreeRam = stat.FreeRam
+			}
+		}
+	}
+	return sheep
 }
 
 func main() {
@@ -31,35 +162,17 @@ func main() {
 	ctx := context.Background()
 
 	// Discover best sheep.
-	var sheep *flock.Sheep
-	bestFreeRam := uint64(math.Inf(1))
-	// for _, s := range discovered {
-
-	s, err := flock.NewSheep("localhost", 5432)
-	if err != nil {
+	ips := make(chan string)
+	if err := discoverSheep(*addr, *port, ips); err != nil {
 		glog.Exit(err)
 	}
-	defer func() {
-		if err := s.Close(); err != nil {
-			glog.Exit(err)
-		}
-	}()
 
-	stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
-	if err != nil {
-		glog.Exitf("Failed to get status for %+v: %s", s, err)
+	sheep := bestSheep(ctx, *ram, ips)
+	if sheep == nil {
+		glog.Exit(fmt.Errorf("failed to find sheep"))
 	}
-	glog.Infof("Status of %s: %+v", s.Id, stat)
 
-	if stat.FreeRam > *ram {
-		if sheep == nil || stat.FreeRam < bestFreeRam {
-			sheep = s
-			bestFreeRam = stat.FreeRam
-		}
-	}
-	// }
-
-	glog.Infof("Best sheep %s (%d)", sheep.Id, bestFreeRam)
+	glog.Infof("Best sheep %s", sheep.Id)
 
 	// Run command.
 	resp, err := sheep.Client.Run(ctx, &pb.RunRequest{
