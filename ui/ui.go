@@ -130,13 +130,13 @@ func discovery(ctx context.Context, addr string, port int) error {
 	go func() {
 		for !done {
 			b := make([]byte, 1024)
-			_, err := c.Read(b)
+			n, err := c.Read(b)
 			if err != nil {
 				glog.Error(err)
 				break
 			}
 
-			addrs <- string(b)
+			addrs <- string(b[:n])
 		}
 		c.Close()
 		close(addrs)

@@ -146,8 +146,6 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 		glog.Infof("Marking job %d as complete", id)
 		j.complete = true
 
-		glog.Info(j)
-
 		jobs.Lock()
 		jobs.jobs[id] = j
 		jobs.Unlock()
@@ -277,12 +275,14 @@ func multicastListen(addr string) error {
 	go func() {
 		for {
 			b := make([]byte, 1024)
-			_, err := c.Read(b)
+			n, err := c.Read(b)
 			if err != nil {
 				glog.Error(err)
 				break
 			}
-			s := string(b)
+			s := string(b[:n])
+
+			glog.Infof("discovery ping %q [%d]", s, n)
 
 			// Reply!
 			raddr, err := net.ResolveUDPAddr("udp", s)

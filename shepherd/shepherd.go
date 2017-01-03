@@ -62,13 +62,17 @@ func discoverSheep(addr string, port int, ips chan<- string) error {
 	go func() {
 		for !done {
 			b := make([]byte, 1024)
-			_, err := c.Read(b)
+			c.SetReadDeadline(time.Now().Add(1 * time.Second))
+			n, err := c.Read(b)
 			if err != nil {
 				glog.Error(err)
 				break
 			}
+			s := string(b[:n])
 
-			ips <- string(b)
+			glog.Infof("discovery ack %q [%d]", s, n)
+
+			ips <- s
 		}
 		c.Close()
 		close(ips)
@@ -134,11 +138,6 @@ func bestSheep(ctx context.Context, ram uint64, ips <-chan string) *flock.Sheep 
 			glog.Error(err)
 			continue
 		}
-		defer func() {
-			if err := s.Close(); err != nil {
-				glog.Error(err)
-			}
-		}()
 
 		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
 		if err != nil {
@@ -171,6 +170,11 @@ func main() {
 	if sheep == nil {
 		glog.Exit(fmt.Errorf("failed to find sheep"))
 	}
+	defer func() {
+		if err := sheep.Close(); err != nil {
+			glog.Exit(err)
+		}
+	}()
 
 	glog.Infof("Best sheep %s", sheep.Id)
 
