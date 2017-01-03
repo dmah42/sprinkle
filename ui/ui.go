@@ -2,14 +2,12 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"html"
 	"html/template"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -100,119 +98,41 @@ func Index(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func discovery(ctx context.Context, addr string, port int) error {
-	// Listen first.
-	laddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return err
-	}
+func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
+	for saddr := range addrs {
+		glog.Infof("Discovered sheep at %s", saddr)
 
-	c, err := net.ListenUDP("udp", laddr)
-	if err != nil {
-		return err
-	}
-	glog.Infof("Listening for discovery replies on %s", laddr)
-
-	var done bool
-
-	go func() {
-		tick := time.NewTicker(5 * time.Second)
-		select {
-		case <-tick.C:
-			glog.Info("Discovery timeout")
-			done = true
-			tick.Stop()
+		host, port, err := net.SplitHostPort(saddr)
+		if err != nil {
+			glog.Error(err)
+			continue
 		}
-	}()
 
-	addrs := make(chan string)
-
-	go func() {
-		for !done {
-			b := make([]byte, 1024)
-			n, err := c.Read(b)
-			if err != nil {
-				glog.Error(err)
-				break
-			}
-
-			addrs <- string(b[:n])
+		p, err := strconv.ParseInt(port, 10, 32)
+		if err != nil {
+			glog.Error(err)
+			continue
 		}
-		c.Close()
-		close(addrs)
-	}()
 
-	go func() {
-		for saddr := range addrs {
-			glog.Infof("Discovered sheep at %s", saddr)
-
-			host, port, err := net.SplitHostPort(saddr)
-			if err != nil {
-				glog.Error(err)
-				continue
-			}
-
-			p, err := strconv.ParseInt(port, 10, 32)
-			if err != nil {
-				glog.Error(err)
-				continue
-			}
-
-			s, err := flock.NewSheep(host, int(p))
-			if err != nil {
-				glog.Errorf("Failed to create new sheep: %s", err)
-				continue
-			}
-
-			glog.Infof("Connected to %+v", s)
-			sheep.add(s)
-
-			stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
-			if err != nil {
-				glog.Warning(err)
-			}
-			glog.Infof("Status of %s: %+v", s.Id, stat)
-			// TODO: lock
-			status[s.Id] = stat
-
-			// TODO: remove old sheep
+		s, err := flock.NewSheep(host, int(p))
+		if err != nil {
+			glog.Errorf("Failed to create new sheep: %s", err)
+			continue
 		}
-	}()
 
-	// Send out a ping.
-	if addr == "" {
-		return errors.New("expected valid addr")
+		glog.Infof("Connected to %+v", s)
+		sheep.add(s)
+
+		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
+		if err != nil {
+			glog.Warning(err)
+		}
+		glog.Infof("Status of %s: %+v", s.Id, stat)
+		// TODO: lock
+		status[s.Id] = stat
+
+		// TODO: remove old sheep
 	}
-
-	udpaddr, err := net.ResolveUDPAddr("udp", addr)
-	if err != nil {
-		return err
-	}
-
-	if !udpaddr.IP.IsMulticast() {
-		return fmt.Errorf("%q is not multicast", addr)
-	}
-
-	name, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-
-	laddrs, err := net.LookupHost(name)
-	if err != nil {
-		return err
-	}
-
-	glog.Infof("Sending discovery ping on %s", udpaddr)
-
-	pc, err := net.DialUDP("udp", nil, udpaddr)
-	if err != nil {
-		return err
-	}
-	defer pc.Close()
-
-	_, err = pc.Write([]byte(net.JoinHostPort(laddrs[0], fmt.Sprintf("%d", port))))
-	return err
 }
 
 func updateStatus(ctx context.Context) {
@@ -248,9 +168,14 @@ func main() {
 
 	go func() {
 		for {
-			if err := discovery(ctx, *addr, *dport); err != nil {
+			addrs := make(chan string)
+			err := flock.Ping(*addr, *dport, addrs)
+			if err != nil {
 				glog.Error(err)
+				goto sleep
 			}
+			handleDiscoveryAcks(ctx, addrs)
+		sleep:
 			time.Sleep(5 * time.Minute)
 		}
 	}()
