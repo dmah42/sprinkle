@@ -29,6 +29,5 @@ I0103 10:13:41.607985   14308 shepherd.go:224] hello
 
 ## TODO
 * TTL on discovery requests.
-* code cleanup to move discovery into a common module
 * bazel build
 * unit tests
