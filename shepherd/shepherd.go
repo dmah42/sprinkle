@@ -65,7 +65,9 @@ func discoverSheep(addr string, port int, ips chan<- string) error {
 			c.SetReadDeadline(time.Now().Add(1 * time.Second))
 			n, err := c.Read(b)
 			if err != nil {
-				glog.Error(err)
+				if !err.(net.Error).Timeout() {
+					glog.Error(err)
+				}
 				break
 			}
 			s := string(b[:n])
@@ -213,6 +215,9 @@ func main() {
 			if err != nil {
 				glog.Exit(err)
 			}
+			if len(chunk.Chunk) == 0 {
+				continue
+			}
 			switch chunk.Type {
 			case pb.LogType_STDOUT:
 				stdout = append(stdout, chunk.Chunk)
@@ -221,10 +226,10 @@ func main() {
 			}
 		}
 		if len(stdout) != 0 {
-			glog.Info(strings.Join(stdout, ""))
+			fmt.Fprintln(os.Stdout, strings.Join(stdout, "\n"))
 		}
 		if len(stderr) != 0 {
-			glog.Error(strings.Join(stderr, ""))
+			fmt.Fprintln(os.Stderr, strings.Join(stderr, "\n"))
 		}
 	}
 }
