@@ -1,4 +1,4 @@
-// Package main defines a stubby service for running jobs.
+// Package worker defines a stubby service for running jobs.
 package main
 
 import (
@@ -18,7 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/flock/proto"
+	pb "github.com/dominichamon/hive/proto"
 )
 
 var (
@@ -47,7 +47,7 @@ type job struct {
 	complete       bool
 }
 
-type sheepServer struct {
+type workerServer struct {
 }
 
 func ram() (uint64, uint64, error) {
@@ -58,7 +58,7 @@ func ram() (uint64, uint64, error) {
 	return si.Totalram, si.Freeram, nil
 }
 
-func (s *sheepServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.StatusResponse, error) {
+func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.StatusResponse, error) {
 	name, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *sheepServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Status
 	}, nil
 }
 
-func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunResponse, error) {
+func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunResponse, error) {
 	// TODO: get available ram
 	_, fr, err := ram()
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *sheepServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespons
 	return &pb.RunResponse{JobId: id}, nil
 }
 
-func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobResponse, error) {
+func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobResponse, error) {
 	jobs.RLock()
 	job := jobs.jobs[req.Id]
 	jobs.RUnlock()
@@ -184,7 +184,7 @@ func (s *sheepServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespons
 	return resp, nil
 }
 
-func (s *sheepServer) Logs(req *pb.LogsRequest, stream pb.Sheep_LogsServer) error {
+func (s *workerServer) Logs(req *pb.LogsRequest, stream pb.Worker_LogsServer) error {
 	var job job
 	for {
 		jobs.RLock()
@@ -333,7 +333,7 @@ func main() {
 		glog.Exit(err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterSheepServer(s, &sheepServer{})
+	pb.RegisterWorkerServer(s, &workerServer{})
 	glog.Infof("listening on %d", *port)
 	s.Serve(l)
 }

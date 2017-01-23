@@ -1,4 +1,4 @@
-// Package main defines a command line for interacting with a flock.
+// Package swarm defines a command line for interacting with a hive.
 package main
 
 import (
@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dominichamon/flock"
+	"github.com/dominichamon/hive"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/flock/proto"
+	pb "github.com/dominichamon/hive/proto"
 )
 
 var (
@@ -31,12 +31,12 @@ type client struct {
 	port     int
 }
 
-func bestSheep(ctx context.Context, ram uint64, addrs <-chan string) *flock.Sheep {
-	var sheep *flock.Sheep
+func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *hive.Worker {
+	var worker *hive.Worker
 	bestFreeRam := uint64(math.Inf(1))
 
 	for addr := range addrs {
-		glog.Infof("Discovered sheep at %s", addr)
+		glog.Infof("Discovered worker at %s", addr)
 
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -50,7 +50,7 @@ func bestSheep(ctx context.Context, ram uint64, addrs <-chan string) *flock.Shee
 			continue
 		}
 
-		s, err := flock.NewSheep(host, int(p))
+		s, err := hive.NewWorker(host, int(p))
 		if err != nil {
 			glog.Error(err)
 			continue
@@ -63,13 +63,13 @@ func bestSheep(ctx context.Context, ram uint64, addrs <-chan string) *flock.Shee
 		glog.Infof("Status of %s [%s]: %+v", s.Id, addr, stat)
 
 		if stat.FreeRam > ram {
-			if sheep == nil || stat.FreeRam < bestFreeRam {
-				sheep = s
+			if worker == nil || stat.FreeRam < bestFreeRam {
+				worker = s
 				bestFreeRam = stat.FreeRam
 			}
 		}
 	}
-	return sheep
+	return worker
 }
 
 func main() {
@@ -77,26 +77,26 @@ func main() {
 
 	ctx := context.Background()
 
-	// Discover best sheep.
+	// Discover best worker.
 	addrs := make(chan string)
-	if err := flock.Ping(*addr, *port, addrs); err != nil {
+	if err := hive.Ping(*addr, *port, addrs); err != nil {
 		glog.Exit(err)
 	}
 
-	sheep := bestSheep(ctx, *ram, addrs)
-	if sheep == nil {
-		glog.Exit(fmt.Errorf("failed to find sheep"))
+	worker := bestWorker(ctx, *ram, addrs)
+	if worker == nil {
+		glog.Exit(fmt.Errorf("failed to find worker"))
 	}
 	defer func() {
-		if err := sheep.Close(); err != nil {
+		if err := worker.Close(); err != nil {
 			glog.Exit(err)
 		}
 	}()
 
-	glog.Infof("Best sheep %s", sheep.Id)
+	glog.Infof("Best worker %s", worker.Id)
 
 	// Run command.
-	resp, err := sheep.Client.Run(ctx, &pb.RunRequest{
+	resp, err := worker.Client.Run(ctx, &pb.RunRequest{
 		Cmd: *cmd,
 		Ram: *ram,
 	})
@@ -105,11 +105,11 @@ func main() {
 	}
 
 	job := resp.JobId
-	glog.Infof("Running %d on %s", job, sheep.Id)
+	glog.Infof("Running %d on %s", job, worker.Id)
 	if *wait {
 		done := false
 		for !done {
-			resp, err := sheep.Client.Job(ctx, &pb.JobRequest{Id: job})
+			resp, err := worker.Client.Job(ctx, &pb.JobRequest{Id: job})
 			if err != nil {
 				glog.Exit(err)
 			}
@@ -117,7 +117,7 @@ func main() {
 			done = resp.Exited
 		}
 
-		stream, err := sheep.Client.Logs(ctx, &pb.LogsRequest{JobId: job})
+		stream, err := worker.Client.Logs(ctx, &pb.LogsRequest{JobId: job})
 		if err != nil {
 			glog.Exit(err)
 		}

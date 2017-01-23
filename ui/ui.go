@@ -1,4 +1,4 @@
-// Package main defines a UI for visualizing flocks.
+// Package ui defines a UI for visualizing a hive.
 package main
 
 import (
@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dominichamon/flock"
+	"github.com/dominichamon/hive"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/flock/proto"
+	pb "github.com/dominichamon/hive/proto"
 )
 
 var (
@@ -25,42 +25,42 @@ var (
 	addr  = flag.String("addr", "", "The multicast address to use for discovery")
 	dport = flag.Int("dport", 9997, "The port on which to listen for discovery")
 
-	sheep  sheepMap
+	worker workerMap
 	status map[string]*pb.StatusResponse
 )
 
-type sheepMap struct {
+type workerMap struct {
 	sync.RWMutex
-	sheep map[string]*flock.Sheep
+	worker map[string]*hive.Worker
 }
 
-func (m *sheepMap) add(s *flock.Sheep) {
+func (m *workerMap) add(s *hive.Worker) {
 	m.Lock()
-	m.sheep[s.Id] = s
+	m.worker[s.Id] = s
 	m.Unlock()
 }
 
-func (m *sheepMap) remove(s *flock.Sheep) error {
+func (m *workerMap) remove(s *hive.Worker) error {
 	m.RLock()
 	defer m.RUnlock()
-	if _, ok := m.sheep[s.Id]; !ok {
-		return fmt.Errorf("sheep %q not found", s.Id)
+	if _, ok := m.worker[s.Id]; !ok {
+		return fmt.Errorf("worker %q not found", s.Id)
 	}
 
 	m.Lock()
 	defer m.Unlock()
-	if _, ok := m.sheep[s.Id]; !ok {
-		return fmt.Errorf("sheep %q not found", s.Id)
+	if _, ok := m.worker[s.Id]; !ok {
+		return fmt.Errorf("worker %q not found", s.Id)
 	}
-	delete(m.sheep, s.Id)
+	delete(m.worker, s.Id)
 
 	return nil
 }
 
 func init() {
-	sheep.Lock()
-	sheep.sheep = make(map[string]*flock.Sheep)
-	sheep.Unlock()
+	worker.Lock()
+	worker.worker = make(map[string]*hive.Worker)
+	worker.Unlock()
 
 	status = make(map[string]*pb.StatusResponse)
 }
@@ -100,7 +100,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 
 func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 	for saddr := range addrs {
-		glog.Infof("Discovered sheep at %s", saddr)
+		glog.Infof("Discovered worker at %s", saddr)
 
 		host, port, err := net.SplitHostPort(saddr)
 		if err != nil {
@@ -114,14 +114,14 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 			continue
 		}
 
-		s, err := flock.NewSheep(host, int(p))
+		s, err := hive.NewWorker(host, int(p))
 		if err != nil {
-			glog.Errorf("Failed to create new sheep: %s", err)
+			glog.Errorf("Failed to create new worker: %s", err)
 			continue
 		}
 
 		glog.Infof("Connected to %+v", s)
-		sheep.add(s)
+		worker.add(s)
 
 		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
 		if err != nil {
@@ -131,20 +131,20 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 		// TODO: lock
 		status[s.Id] = stat
 
-		// TODO: remove old sheep
+		// TODO: remove old worker
 	}
 }
 
 func updateStatus(ctx context.Context) {
 	for {
-		sheep.RLock()
-		ss := make([]*flock.Sheep, len(sheep.sheep))
+		worker.RLock()
+		ss := make([]*hive.Worker, len(worker.worker))
 		i := 0
-		for _, s := range sheep.sheep {
+		for _, s := range worker.worker {
 			ss[i] = s
 			i++
 		}
-		sheep.RUnlock()
+		worker.RUnlock()
 
 		for _, s := range ss {
 			stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
@@ -169,7 +169,7 @@ func main() {
 	go func() {
 		for {
 			addrs := make(chan string)
-			err := flock.Ping(*addr, *dport, addrs)
+			err := hive.Ping(*addr, *dport, addrs)
 			if err != nil {
 				glog.Error(err)
 				goto sleep

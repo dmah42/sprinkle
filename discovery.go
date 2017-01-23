@@ -1,4 +1,4 @@
-package flock
+package hive
 
 import (
 	"errors"

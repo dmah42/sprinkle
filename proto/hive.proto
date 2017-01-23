@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package flock;
+package hive;
 
 message StatusRequest {
 }
@@ -60,7 +60,7 @@ message LogsResponse {
   string chunk = 2;
 }
 
-service Sheep {
+service Worker {
   rpc Status(StatusRequest) returns (StatusResponse) {}
   rpc Run(RunRequest) returns (RunResponse) {}
   rpc Job(JobRequest) returns (JobResponse) {}

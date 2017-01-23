@@ -4,27 +4,27 @@ sight: All parts take an `addr` command line argument that refers to a UDP
 multicast address on which workers can be discovered.
 
 ## Modules
-### Sheep
-The worker. Responsible for doing work. Exposes a gRPC service definition
-defined in `proto/sheep.proto`.
+### Worker
+ Responsible for doing work. Exposes a gRPC service definition defined in
+`proto/hive.proto`.
 
-### Shepherd
-User-facing command line for running work on sheep.
+### Swarm
+User-facing command line for running work on a hive.
 
 ### UI
-Simple HTTP server to monitor the flock.
+Simple HTTP server to monitor the hive.
 
 ## Example command line
 Start a worker
 ```
-$ ./bin/sheep --logtostderr --addr="225.0.0.1:9999"
+$ ./bin/worker --logtostderr --addr="225.0.0.1:9999"
 ```
 
 Run a command
 ```
-$ ./bin/shepherd --cmd="echo hello" --logtostderr --addr=225.0.0.1:9999
+$ ./bin/swarm --cmd="echo hello" --logtostderr --addr=225.0.0.1:9999
 ...
-I0103 10:13:41.607985   14308 shepherd.go:224] hello
+I0103 10:13:41.607985   14308 swarm.go:224] hello
 ```
 
 ## TODO

@@ -1,4 +1,4 @@
-package flock
+package hive
 
 import (
 	"fmt"
@@ -6,28 +6,28 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/flock/proto"
+	pb "github.com/dominichamon/hive/proto"
 )
 
-type Sheep struct {
+type Worker struct {
 	Id string
 
 	conn   *grpc.ClientConn
-	Client pb.SheepClient
+	Client pb.WorkerClient
 }
 
-func (s *Sheep) Close() error {
-	return s.conn.Close()
+func (w *Worker) Close() error {
+	return w.conn.Close()
 }
 
-func NewSheep(host string, port int) (*Sheep, error) {
+func NewWorker(host string, port int) (*Worker, error) {
 	conn, err := grpc.Dial(net.JoinHostPort(host, fmt.Sprintf("%d", port)), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
-	return &Sheep{
+	return &Worker{
 		Id:     net.JoinHostPort(host, fmt.Sprintf("%d", port)),
 		conn:   conn,
-		Client: pb.NewSheepClient(conn),
+		Client: pb.NewWorkerClient(conn),
 	}, nil
 }
