@@ -184,6 +184,20 @@ func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespon
 	return resp, nil
 }
 
+func (s *workerServer) Jobs(_ context.Context, _ *pb.JobsRequest) (*pb.JobsResponse, error) {
+	resp := &pb.JobsResponse{}
+	jobs.RLock()
+	defer jobs.RUnlock()
+
+	resp.Id = make([]int64, len(jobs.jobs))
+	i := 0
+	for id := range jobs.jobs {
+		resp.Id[i] = id
+		i++
+	}
+	return resp, nil
+}
+
 func (s *workerServer) Logs(req *pb.LogsRequest, stream pb.Worker_LogsServer) error {
 	var job job
 	for {

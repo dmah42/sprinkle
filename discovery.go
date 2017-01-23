@@ -85,7 +85,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 		return err
 	}
 
-	glog.Info("Sending discovery ping on %s", udpaddr)
+	glog.Info("Sending discovery ping on ", udpaddr)
 
 	pc, err := net.DialUDP("udp", nil, udpaddr)
 	if err != nil {

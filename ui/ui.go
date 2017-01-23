@@ -21,12 +21,14 @@ import (
 
 var (
 	port = flag.Int("port", 1248, "The port on which to listen for HTTP")
+	poll = flag.Duration("poll", 5*time.Minute, "The time to wait between discovery attempts")
 
 	addr  = flag.String("addr", "", "The multicast address to use for discovery")
 	dport = flag.Int("dport", 9997, "The port on which to listen for discovery")
 
 	worker workerMap
-	status map[string]*pb.StatusResponse
+	status statusMap
+	jobs   jobsMap
 )
 
 type workerMap struct {
@@ -57,12 +59,29 @@ func (m *workerMap) remove(s *hive.Worker) error {
 	return nil
 }
 
+type statusMap struct {
+	sync.RWMutex
+	status map[string]*pb.StatusResponse
+}
+
+type jobsMap struct {
+	sync.RWMutex
+	// TODO: add job id by making the value a map.
+	jobs map[string][]*pb.JobResponse
+}
+
 func init() {
 	worker.Lock()
 	worker.worker = make(map[string]*hive.Worker)
 	worker.Unlock()
 
-	status = make(map[string]*pb.StatusResponse)
+	status.Lock()
+	status.status = make(map[string]*pb.StatusResponse)
+	status.Unlock()
+
+	jobs.Lock()
+	jobs.jobs = make(map[string][]*pb.JobResponse)
+	jobs.Unlock()
 }
 
 func handleError(w http.ResponseWriter, code int, err error) {
@@ -74,9 +93,12 @@ func handleError(w http.ResponseWriter, code int, err error) {
 func Index(w http.ResponseWriter, req *http.Request) {
 	t, err := template.New("index").Parse(
 		`<html><body>
+		<title>hive</title>
+		<h1>hive</h1>
+		<h2>status</h2>
 		<table>
 		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
-		{{range $id, $status := .}}
+		{{range $id, $status := .Status}}
 			<tr>
 				<td>{{$id}}</td>
 				<td>{{$status.Ip}}</td>
@@ -86,13 +108,38 @@ func Index(w http.ResponseWriter, req *http.Request) {
 			</tr>
 		{{end}}
 		</table>
+		<h2>jobs</h2>
+		<table>
+		<thead><th>Id</th><th>Start time</th><th>Exited</th><th>Success</th></thead>
+		{{range $id, $jobs := .Jobs}}
+			{{range $_, $job := $jobs}}
+				<tr>
+					<td>{{$id}}</td>
+					<td>{{$job.StartTime}}</td>
+					<td>{{$job.Exited}}</td>
+					<td>{{$job.Success}}</td>
+				</tr>
+			{{end}}
+		{{end}}
+		</table>
 		</body></html>`)
 	if err != nil {
 		handleError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	if err = t.Execute(w, status); err != nil {
+	status.RLock()
+	defer status.RUnlock()
+
+	jobs.RLock()
+	defer jobs.RUnlock()
+
+	data := struct {
+		Status map[string]*pb.StatusResponse
+		Jobs   map[string][]*pb.JobResponse
+	}{status.status, jobs.jobs}
+
+	if err = t.Execute(w, data); err != nil {
 		handleError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -128,14 +175,15 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 			glog.Warning(err)
 		}
 		glog.Infof("Status of %s: %+v", s.Id, stat)
-		// TODO: lock
-		status[s.Id] = stat
+		status.Lock()
+		status.status[s.Id] = stat
+		status.Unlock()
 
 		// TODO: remove old worker
 	}
 }
 
-func updateStatus(ctx context.Context) {
+func updateWorkers(ctx context.Context) {
 	for {
 		worker.RLock()
 		ss := make([]*hive.Worker, len(worker.worker))
@@ -153,8 +201,28 @@ func updateStatus(ctx context.Context) {
 				continue
 			}
 			glog.Infof("Status of %s: %+v", s.Id, stat)
-			// TODO: lock
-			status[s.Id] = stat
+			status.Lock()
+			status.status[s.Id] = stat
+			status.Unlock()
+
+			jobsResp, err := s.Client.Jobs(ctx, &pb.JobsRequest{})
+			if err != nil {
+				glog.Warningf("Failed to get jobs for %+v: %s", s, err)
+				continue
+			}
+			glog.Infof("Jobs for %s: %+v", s.Id, jobsResp)
+			jrs := make([]*pb.JobResponse, len(jobsResp.Id))
+			for i, id := range jobsResp.Id {
+				j, err := s.Client.Job(ctx, &pb.JobRequest{Id: id})
+				if err != nil {
+					glog.Warningf("Failed to get job for %+v, %d: %s", s, id, err)
+					continue
+				}
+				jrs[i] = j
+			}
+			jobs.Lock()
+			jobs.jobs[s.Id] = jrs
+			jobs.Unlock()
 		}
 
 		time.Sleep(1 * time.Minute)
@@ -176,10 +244,10 @@ func main() {
 			}
 			handleDiscoveryAcks(ctx, addrs)
 		sleep:
-			time.Sleep(5 * time.Minute)
+			time.Sleep(*poll)
 		}
 	}()
-	go updateStatus(ctx)
+	go updateWorkers(ctx)
 
 	http.HandleFunc("/", Index)
 	glog.Infof("listening on port %d", *port)
