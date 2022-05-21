@@ -29,5 +29,4 @@ I0103 10:13:41.607985   14308 swarm.go:224] hello
 
 ## TODO
 * TTL on discovery requests.
-* bazel build
 * unit tests
