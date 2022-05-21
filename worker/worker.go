@@ -18,7 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/hive/proto"
+	pb "github.com/dominichamon/swarm/proto"
 )
 
 var (

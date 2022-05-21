@@ -1,4 +1,4 @@
-// Package ui defines a UI for visualizing a hive.
+// Package ui defines a UI for visualizing a swarm.
 package main
 
 import (
@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dominichamon/hive"
+	"github.com/dominichamon/swarm"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/hive/proto"
+	pb "github.com/dominichamon/swarm/proto"
 )
 
 var (
@@ -33,16 +33,16 @@ var (
 
 type workerMap struct {
 	sync.RWMutex
-	worker map[string]*hive.Worker
+	worker map[string]*swarm.Worker
 }
 
-func (m *workerMap) add(s *hive.Worker) {
+func (m *workerMap) add(s *swarm.Worker) {
 	m.Lock()
 	m.worker[s.Id] = s
 	m.Unlock()
 }
 
-func (m *workerMap) remove(s *hive.Worker) error {
+func (m *workerMap) remove(s *swarm.Worker) error {
 	m.RLock()
 	defer m.RUnlock()
 	if _, ok := m.worker[s.Id]; !ok {
@@ -72,7 +72,7 @@ type jobsMap struct {
 
 func init() {
 	worker.Lock()
-	worker.worker = make(map[string]*hive.Worker)
+	worker.worker = make(map[string]*swarm.Worker)
 	worker.Unlock()
 
 	status.Lock()
@@ -93,8 +93,8 @@ func handleError(w http.ResponseWriter, code int, err error) {
 func Index(w http.ResponseWriter, req *http.Request) {
 	t, err := template.New("index").Parse(
 		`<html><body>
-		<title>hive</title>
-		<h1>hive</h1>
+		<title>swarm</title>
+		<h1>swarm</h1>
 		<h2>status</h2>
 		<table>
 		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
@@ -161,7 +161,7 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 			continue
 		}
 
-		s, err := hive.NewWorker(host, int(p))
+		s, err := swarm.NewWorker(host, int(p))
 		if err != nil {
 			glog.Errorf("Failed to create new worker: %s", err)
 			continue
@@ -186,7 +186,7 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 func updateWorkers(ctx context.Context) {
 	for {
 		worker.RLock()
-		ss := make([]*hive.Worker, len(worker.worker))
+		ss := make([]*swarm.Worker, len(worker.worker))
 		i := 0
 		for _, s := range worker.worker {
 			ss[i] = s
@@ -237,7 +237,7 @@ func main() {
 	go func() {
 		for {
 			addrs := make(chan string)
-			err := hive.Ping(*addr, *dport, addrs)
+			err := swarm.Ping(*addr, *dport, addrs)
 			if err != nil {
 				glog.Error(err)
 				goto sleep

@@ -1,10 +1,10 @@
 #!/bin/bash +x
 
-GH=github.com/dominichamon/hive
+GH=github.com/dominichamon/swarm
 OUT=bin
 
 echo "building proto"
-protoc -Iproto/ ./proto/hive.proto --go_out=plugins=grpc:proto
+protoc -Iproto/ ./proto/swarm.proto --go_out=plugins=grpc:proto
 go build $GH/proto
 
 for b in worker swarm ui; do

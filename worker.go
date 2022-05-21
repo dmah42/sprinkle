@@ -1,4 +1,4 @@
-package hive
+package swarm
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/hive/proto"
+	pb "github.com/dominichamon/swarm/proto"
 )
 
 type Worker struct {

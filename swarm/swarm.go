@@ -1,4 +1,4 @@
-// Package swarm defines a command line for interacting with a hive.
+// Package main defines a command line for interacting with a swarm.
 package main
 
 import (
@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dominichamon/hive"
+	"github.com/dominichamon/swarm"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/hive/proto"
+	pb "github.com/dominichamon/swarm/proto"
 )
 
 var (
@@ -31,8 +31,8 @@ type client struct {
 	port     int
 }
 
-func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *hive.Worker {
-	var worker *hive.Worker
+func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *swarm.Worker {
+	var worker *swarm.Worker
 	bestFreeRam := uint64(math.Inf(1))
 
 	for addr := range addrs {
@@ -50,7 +50,7 @@ func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *hive.Work
 			continue
 		}
 
-		s, err := hive.NewWorker(host, int(p))
+		s, err := swarm.NewWorker(host, int(p))
 		if err != nil {
 			glog.Error(err)
 			continue
@@ -79,7 +79,7 @@ func main() {
 
 	// Discover best worker.
 	addrs := make(chan string)
-	if err := hive.Ping(*addr, *port, addrs); err != nil {
+	if err := swarm.Ping(*addr, *port, addrs); err != nil {
 		glog.Exit(err)
 	}
 

@@ -1,4 +1,4 @@
-# Hive
+# Swarm
 Run jobs on distributed machines easily. No master negotiation or consensus in
 sight: All parts take an `addr` command line argument that refers to a UDP
 multicast address on which workers can be discovered.
@@ -6,13 +6,13 @@ multicast address on which workers can be discovered.
 ## Modules
 ### Worker
  Responsible for doing work. Exposes a gRPC service definition defined in
-`proto/hive.proto`.
+`proto/swarm.proto`.
 
 ### Swarm
-User-facing command line for running work on a hive.
+User-facing command line for running work on a swarm.
 
 ### UI
-Simple HTTP server to monitor the hive.
+Simple HTTP server to monitor the swarm.
 
 ## Example command line
 Start a worker
