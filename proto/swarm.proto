@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-option go_package = ".;proto";
+// TODO: figure out what this should be and how to best
+// structure the project
+option go_package = ".;swarm";
 
 package swarm;
 
