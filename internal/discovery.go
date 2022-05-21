@@ -37,7 +37,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 		return err
 	}
 
-	glog.Infof("Discovery listening on %s", laddr)
+	glog.Infof("discovery listening on %s", laddr)
 
 	var done bool
 
@@ -46,7 +46,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 		tick := time.NewTicker(5 * time.Second)
 		select {
 		case <-tick.C:
-			glog.Info("Discovery timeout")
+			glog.Info("discovery timeout")
 			done = true
 			tick.Stop()
 		}
@@ -66,7 +66,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 			}
 			s := string(b[:n])
 
-			glog.Infof("Discovery ack %q [%d]", s, n)
+			glog.Infof("discovery ack %q [%d]", s, n)
 
 			addrs <- s
 		}
@@ -85,7 +85,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 		return err
 	}
 
-	glog.Info("Sending discovery ping on ", udpaddr)
+	glog.Info("sending discovery ping on ", udpaddr)
 
 	pc, err := net.DialUDP("udp", nil, udpaddr)
 	if err != nil {
@@ -93,6 +93,8 @@ func Ping(addr string, port int, addrs chan<- string) error {
 	}
 	defer pc.Close()
 
-	_, err = pc.Write([]byte(net.JoinHostPort(laddrs[0], fmt.Sprintf("%d", port))))
+	msg := net.JoinHostPort(laddrs[0], fmt.Sprintf("%d", port))
+	glog.Infof("sending msg %q", msg)
+	_, err = pc.Write([]byte(msg))
 	return err
 }
