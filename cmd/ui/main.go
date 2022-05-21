@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dominichamon/swarm"
+	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
@@ -33,16 +33,16 @@ var (
 
 type workerMap struct {
 	sync.RWMutex
-	worker map[string]*swarm.Worker
+	worker map[string]*internal.Worker
 }
 
-func (m *workerMap) add(s *swarm.Worker) {
+func (m *workerMap) add(s *internal.Worker) {
 	m.Lock()
 	m.worker[s.Id] = s
 	m.Unlock()
 }
 
-func (m *workerMap) remove(s *swarm.Worker) error {
+func (m *workerMap) remove(s *internal.Worker) error {
 	m.RLock()
 	defer m.RUnlock()
 	if _, ok := m.worker[s.Id]; !ok {
@@ -72,7 +72,7 @@ type jobsMap struct {
 
 func init() {
 	worker.Lock()
-	worker.worker = make(map[string]*swarm.Worker)
+	worker.worker = make(map[string]*internal.Worker)
 	worker.Unlock()
 
 	status.Lock()
@@ -161,7 +161,7 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 			continue
 		}
 
-		s, err := swarm.NewWorker(host, int(p))
+		s, err := internal.NewWorker(host, int(p))
 		if err != nil {
 			glog.Errorf("Failed to create new worker: %s", err)
 			continue
@@ -186,7 +186,7 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 func updateWorkers(ctx context.Context) {
 	for {
 		worker.RLock()
-		ss := make([]*swarm.Worker, len(worker.worker))
+		ss := make([]*internal.Worker, len(worker.worker))
 		i := 0
 		for _, s := range worker.worker {
 			ss[i] = s
@@ -237,7 +237,7 @@ func main() {
 	go func() {
 		for {
 			addrs := make(chan string)
-			err := swarm.Ping(*addr, *dport, addrs)
+			err := internal.Ping(*addr, *dport, addrs)
 			if err != nil {
 				glog.Error(err)
 				goto sleep

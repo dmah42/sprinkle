@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dominichamon/swarm"
+	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
@@ -31,8 +31,8 @@ type client struct {
 	port     int
 }
 
-func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *swarm.Worker {
-	var worker *swarm.Worker
+func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *internal.Worker {
+	var worker *internal.Worker
 	bestFreeRam := uint64(math.Inf(1))
 
 	for addr := range addrs {
@@ -50,7 +50,7 @@ func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *swarm.Wor
 			continue
 		}
 
-		s, err := swarm.NewWorker(host, int(p))
+		s, err := internal.NewWorker(host, int(p))
 		if err != nil {
 			glog.Error(err)
 			continue
@@ -79,7 +79,7 @@ func main() {
 
 	// Discover best worker.
 	addrs := make(chan string)
-	if err := swarm.Ping(*addr, *port, addrs); err != nil {
+	if err := internal.Ping(*addr, *port, addrs); err != nil {
 		glog.Exit(err)
 	}
 
