@@ -16,7 +16,7 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/swarm/proto"
+	pb "github.com/dominichamon/swarm/api/swarm"
 )
 
 var (
