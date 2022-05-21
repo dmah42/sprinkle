@@ -70,9 +70,18 @@ message LogsResponse {
 }
 
 service Worker {
+  // Get the status of the worker
   rpc Status(StatusRequest) returns (StatusResponse) {}
+
+  // Run a job on the worker
   rpc Run(RunRequest) returns (RunResponse) {}
+
+  // Get information about a running job on the worker
   rpc Job(JobRequest) returns (JobResponse) {}
+
+  // Get a list of running jobs on the worker
   rpc Jobs(JobsRequest) returns (JobsResponse) {}
+
+  // Get the logs for a given job on the worker
   rpc Logs(LogsRequest) returns (stream LogsResponse) {}
 }
