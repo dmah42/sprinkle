@@ -29,6 +29,43 @@ var (
 	worker workerMap
 	status statusMap
 	jobs   jobsMap
+
+	indexTmpl = template.Must(template.New("index").Parse(
+`<html>
+	<head>
+		<title>swarm</title>
+	</head>
+	<body>
+		<h1>swarm</h1>
+		<h2>status</h2>
+		<table>
+		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
+		{{range $id, $status := .Status}}
+			<tr>
+				<td>{{$id}}</td>
+				<td>{{$status.Ip}}</td>
+				<td>{{$status.Hostname}}</td>
+				<td>{{$status.TotalRam}}</td>
+				<td>{{$status.FreeRam}}</td>
+			</tr>
+		{{end}}
+		</table>
+		<h2>jobs</h2>
+		<table>
+		<thead><th>Id</th><th>Start time</th><th>Exited</th><th>Success</th></thead>
+		{{range $id, $jobs := .Jobs}}
+			{{range $_, $job := $jobs}}
+				<tr>
+					<td>{{$id}}</td>
+					<td>{{$job.StartTime}}</td>
+					<td>{{$job.Exited}}</td>
+					<td>{{$job.Success}}</td>
+				</tr>
+			{{end}}
+		{{end}}
+		</table>
+	</body>
+</html>`))
 )
 
 type workerMap struct {
@@ -91,43 +128,6 @@ func handleError(w http.ResponseWriter, code int, err error) {
 }
 
 func Index(w http.ResponseWriter, req *http.Request) {
-	t, err := template.New("index").Parse(
-		`<html><body>
-		<title>swarm</title>
-		<h1>swarm</h1>
-		<h2>status</h2>
-		<table>
-		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
-		{{range $id, $status := .Status}}
-			<tr>
-				<td>{{$id}}</td>
-				<td>{{$status.Ip}}</td>
-				<td>{{$status.Hostname}}</td>
-				<td>{{$status.TotalRam}}</td>
-				<td>{{$status.FreeRam}}</td>
-			</tr>
-		{{end}}
-		</table>
-		<h2>jobs</h2>
-		<table>
-		<thead><th>Id</th><th>Start time</th><th>Exited</th><th>Success</th></thead>
-		{{range $id, $jobs := .Jobs}}
-			{{range $_, $job := $jobs}}
-				<tr>
-					<td>{{$id}}</td>
-					<td>{{$job.StartTime}}</td>
-					<td>{{$job.Exited}}</td>
-					<td>{{$job.Success}}</td>
-				</tr>
-			{{end}}
-		{{end}}
-		</table>
-		</body></html>`)
-	if err != nil {
-		handleError(w, http.StatusInternalServerError, err)
-		return
-	}
-
 	status.RLock()
 	defer status.RUnlock()
 
@@ -139,7 +139,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 		Jobs   map[string][]*pb.JobResponse
 	}{status.status, jobs.jobs}
 
-	if err = t.Execute(w, data); err != nil {
+	if err := indexTmpl.Execute(w, data); err != nil {
 		handleError(w, http.StatusInternalServerError, err)
 		return
 	}
