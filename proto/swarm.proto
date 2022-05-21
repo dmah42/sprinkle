@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-package proto;
+option go_package = ".;proto";
+
+package swarm;
 
 message StatusRequest {
 }
