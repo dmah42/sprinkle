@@ -17,7 +17,6 @@ import (
 	pb "github.com/dominichamon/swarm/api/swarm"
 )
 
-
 var (
 	jobId int64
 	jobs  jobMap

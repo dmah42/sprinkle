@@ -111,12 +111,12 @@ func main() {
 	flag.Parse()
 
 	if err := multicastListen(*addr); err != nil {
-		glog.Exit(err)
+		glog.Exit("failed to listen for multicast: %v", err)
 	}
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		glog.Exit(err)
+		glog.Exit("failed to listen for job requests: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterWorkerServer(s, &workerServer{})

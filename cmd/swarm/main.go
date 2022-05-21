@@ -36,7 +36,7 @@ func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *internal.
 	bestFreeRam := uint64(math.Inf(1))
 
 	for addr := range addrs {
-		glog.Infof("Discovered worker at %s", addr)
+		glog.Infof("discovered worker at %s", addr)
 
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
@@ -80,12 +80,12 @@ func main() {
 	// Discover best worker.
 	addrs := make(chan string)
 	if err := internal.Ping(*addr, *port, addrs); err != nil {
-		glog.Exit(err)
+		glog.Exit("failed to find workers: +v", err)
 	}
 
 	worker := bestWorker(ctx, *ram, addrs)
 	if worker == nil {
-		glog.Exit(fmt.Errorf("failed to find worker"))
+		glog.Exit(fmt.Errorf("failed to identify best worker"))
 	}
 	defer func() {
 		if err := worker.Close(); err != nil {
@@ -93,7 +93,7 @@ func main() {
 		}
 	}()
 
-	glog.Infof("Best worker %s", worker.Id)
+	glog.Infof("best worker found: %q", worker.Id)
 
 	// Run command.
 	resp, err := worker.Client.Run(ctx, &pb.RunRequest{
@@ -105,7 +105,7 @@ func main() {
 	}
 
 	job := resp.JobId
-	glog.Infof("Running %d on %s", job, worker.Id)
+	glog.Infof("running job %d on worker %q", job, worker.Id)
 	if *wait {
 		done := false
 		for !done {
