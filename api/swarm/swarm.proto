@@ -2,7 +2,7 @@ syntax = "proto3";
 
 // TODO: figure out what this should be and how to best
 // structure the project
-option go_package = ".;swarm";
+option go_package = "github.com/dominichamon/swarm/api/swarm";
 
 package swarm;
 

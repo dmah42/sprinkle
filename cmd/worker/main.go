@@ -18,7 +18,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/swarm/proto"
+	pb "github.com/dominichamon/swarm/api/swarm"
 )
 
 var (
@@ -48,6 +48,7 @@ type job struct {
 }
 
 type workerServer struct {
+	pb.UnimplementedWorkerServer
 }
 
 func ram() (uint64, uint64, error) {

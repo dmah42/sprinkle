@@ -15,19 +15,19 @@ ui: $(OUT)/ui
 .PHONY: clean
 clean:
 	@rm $(OUT)/*
-	@rm proto/swarm_grpc.pb.go
+	@rm api/swarm/swarm_grpc.pb.go
 
-proto/swarm_grpc.pb.go: proto/swarm.proto
-	protoc --go-grpc_out=./ --go-grpc_opt=paths=source_relative $<
+api/swarm/swarm_grpc.pb.go: ./api/swarm/*.proto
+	go generate ./api/swarm
 
-$(OUT)/worker: internal/*.go proto/swarm_grpc.pb.go cmd/worker/*.go
+$(OUT)/worker: internal/*.go api/swarm/swarm_grpc.pb.go cmd/worker/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/worker
 
-$(OUT)/swarm: internal/*.go proto/swarm_grpc.pb.go cmd/swarm/*.go
+$(OUT)/swarm: internal/*.go api/swarm/swarm_grpc.pb.go cmd/swarm/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/swarm
 
-$(OUT)/ui: internal/*.go proto/swarm_grpc.pb.go cmd/ui/*.go
+$(OUT)/ui: internal/*.go api/swarm/swarm_grpc.pb.go cmd/ui/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/ui
