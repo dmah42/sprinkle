@@ -16,7 +16,7 @@ import (
 
 var (
 	port = flag.Int("port", 5432, "The port on which to listen for RPC requests")
-	addr = flag.String("addr", "", "The host/ip and port on which to listen for multicast discovery pings")
+	addr = flag.String("addr", "225.0.0.1:9999", "The host/ip and port on which to listen for multicast discovery pings")
 )
 
 func multicastInterface() (*net.Interface, error) {
@@ -111,15 +111,16 @@ func main() {
 	flag.Parse()
 
 	if err := multicastListen(*addr); err != nil {
-		glog.Exit("failed to listen for multicast: %v", err)
+		glog.Exit("failed to listen for multicast: ", err)
 	}
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		glog.Exit("failed to listen for job requests: %v", err)
+		glog.Exit("failed to listen for job requests:", err)
 	}
+	glog.Infof("starting worker on port %d", *port)
 	s := grpc.NewServer()
 	pb.RegisterWorkerServer(s, &workerServer{})
-	glog.Infof("listening on %d", *port)
+	glog.Infof("listening on port %d", *port)
 	s.Serve(l)
 }
