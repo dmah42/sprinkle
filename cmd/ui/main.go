@@ -2,6 +2,7 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
 	"html"
@@ -30,42 +31,9 @@ var (
 	status statusMap
 	jobs   jobsMap
 
-	indexTmpl = template.Must(template.New("index").Parse(
-`<html>
-	<head>
-		<title>swarm</title>
-	</head>
-	<body>
-		<h1>swarm</h1>
-		<h2>status</h2>
-		<table>
-		<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
-		{{range $id, $status := .Status}}
-			<tr>
-				<td>{{$id}}</td>
-				<td>{{$status.Ip}}</td>
-				<td>{{$status.Hostname}}</td>
-				<td>{{$status.TotalRam}}</td>
-				<td>{{$status.FreeRam}}</td>
-			</tr>
-		{{end}}
-		</table>
-		<h2>jobs</h2>
-		<table>
-		<thead><th>Id</th><th>Start time</th><th>Exited</th><th>Success</th></thead>
-		{{range $id, $jobs := .Jobs}}
-			{{range $_, $job := $jobs}}
-				<tr>
-					<td>{{$id}}</td>
-					<td>{{$job.StartTime}}</td>
-					<td>{{$job.Exited}}</td>
-					<td>{{$job.Success}}</td>
-				</tr>
-			{{end}}
-		{{end}}
-		</table>
-	</body>
-</html>`))
+	//go:embed index.html
+	embedFS embed.FS
+	indexTmpl *template.Template
 )
 
 type workerMap struct {
@@ -108,6 +76,8 @@ type jobsMap struct {
 }
 
 func init() {
+	indexTmpl = template.Must(template.New("index.html").ParseFS(embedFS, "index.html"))
+
 	worker.Lock()
 	worker.worker = make(map[string]*internal.Worker)
 	worker.Unlock()
