@@ -29,6 +29,6 @@ $(OUT)/swarm: internal/*.go api/swarm/*.pb.go cmd/swarm/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/swarm
 
-$(OUT)/ui: internal/*.go api/swarm/*.pb.go cmd/ui/*.go
+$(OUT)/ui: internal/*.go api/swarm/*.pb.go cmd/ui/*.go cmd/ui/*.html
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/ui
