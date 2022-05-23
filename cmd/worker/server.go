@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/mackerelio/go-osstat/memory"
 	"golang.org/x/net/context"
 
 	pb "github.com/dominichamon/swarm/api/swarm"
@@ -46,11 +47,12 @@ type workerServer struct {
 }
 
 func ram() (uint64, uint64, error) {
-	var si syscall.Sysinfo_t
-	if err := syscall.Sysinfo(&si); err != nil {
+	memory, err := memory.Get()
+	if err != nil {
 		return 0, 0, err
 	}
-	return si.Totalram, si.Freeram, nil
+
+	return memory.Total, memory.Free, nil
 }
 
 func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.StatusResponse, error) {
@@ -166,11 +168,11 @@ func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespon
 			resp.Rusage = &pb.RUsage{
 				Utime: &pb.Timeval{
 					Sec:  su.Utime.Sec,
-					Usec: su.Utime.Usec,
+					Usec: int64(su.Utime.Usec),
 				},
 				Stime: &pb.Timeval{
 					Sec:  su.Stime.Sec,
-					Usec: su.Stime.Usec,
+					Usec: int64(su.Stime.Usec),
 				},
 				Maxrss: su.Maxrss,
 			}
