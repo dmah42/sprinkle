@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
@@ -115,6 +116,7 @@ func main() {
 			}
 			glog.Infof(".. %+v", resp)
 			done = resp.Exited
+			time.Sleep(10 * time.Millisecond)
 		}
 
 		stream, err := worker.Client.Logs(ctx, &pb.LogsRequest{JobId: job})
