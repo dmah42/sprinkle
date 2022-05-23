@@ -80,7 +80,6 @@ func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Statu
 }
 
 func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunResponse, error) {
-	// TODO: get available ram
 	_, fr, err := ram()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine free RAM: %s", err)
@@ -89,6 +88,8 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		return nil, fmt.Errorf("not enough RAM; %d vs %d", req.Ram, fr)
 	}
 
+	// TODO: enqueue the job for later processing to limit jobs per worker
+	// see: http://www.goldsborough.me/go/2020/12/06/12-24-24-non-blocking_parallelism_for_services_in_go/
 	j := job{
 		start: time.Now(),
 	}
