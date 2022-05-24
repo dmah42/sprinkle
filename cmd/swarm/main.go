@@ -9,8 +9,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
@@ -108,22 +106,12 @@ func main() {
 	job := resp.JobId
 	glog.Infof("running job %d on worker %q", job, worker.Id)
 	if *wait {
-		done := false
-		for !done {
-			resp, err := worker.Client.Job(ctx, &pb.JobRequest{Id: job})
-			if err != nil {
-				glog.Exit(err)
-			}
-			glog.Infof(".. %+v", resp)
-			done = resp.Exited
-			time.Sleep(10 * time.Millisecond)
-		}
-
+		// no need to check on the job as the logs stream until the job
+		// is complete.
 		stream, err := worker.Client.Logs(ctx, &pb.LogsRequest{JobId: job})
 		if err != nil {
 			glog.Exit(err)
 		}
-		var stdout, stderr []string
 		for {
 			chunk, err := stream.Recv()
 			if err == io.EOF {
@@ -137,16 +125,10 @@ func main() {
 			}
 			switch chunk.Type {
 			case pb.LogType_STDOUT:
-				stdout = append(stdout, chunk.Chunk)
+				fmt.Fprintln(os.Stdout, chunk.Chunk)
 			case pb.LogType_STDERR:
-				stderr = append(stderr, chunk.Chunk)
+				fmt.Fprintln(os.Stderr, chunk.Chunk)
 			}
-		}
-		if len(stdout) != 0 {
-			fmt.Fprintln(os.Stdout, strings.Join(stdout, "\n"))
-		}
-		if len(stderr) != 0 {
-			fmt.Fprintln(os.Stderr, strings.Join(stderr, "\n"))
 		}
 	}
 }

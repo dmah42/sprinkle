@@ -196,6 +196,21 @@ func (s *workerServer) Jobs(_ context.Context, _ *pb.JobsRequest) (*pb.JobsRespo
 	return resp, nil
 }
 
+// streamLogs chunks up the `logs` of type `t`, and streams to `stream`.
+func streamLogs(stream pb.Worker_LogsServer, t pb.LogType, logs string) error {
+	glog.Infof("chunking %q", logs)
+	for _, s := range strings.Split(logs, "\n") {
+		err := stream.Send(&pb.LogsResponse{
+			Type:  t,
+			Chunk: s + "\n",
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *workerServer) Logs(req *pb.LogsRequest, stream pb.Worker_LogsServer) error {
 	var job job
 	for {
@@ -210,36 +225,20 @@ func (s *workerServer) Logs(req *pb.LogsRequest, stream pb.Worker_LogsServer) er
 		if job.complete {
 			break
 		}
+		// TODO: don't wait for the job to complete before streaming
+		// the logs.
 		glog.Infof("Waiting for job %d to complete", req.JobId)
 		time.Sleep(3 * time.Second)
 	}
 
 	if req.Type == pb.LogType_STDOUT || req.Type == pb.LogType_BOTH {
-		// chunk up stdout and stream them.
-		out := job.stdout
-		glog.Infof("out %q", out)
-		for _, s := range strings.Split(out, "\n") {
-			err := stream.Send(&pb.LogsResponse{
-				Type:  pb.LogType_STDOUT,
-				Chunk: s,
-			})
-			if err != nil {
-				return err
-			}
+		if err := streamLogs(stream, pb.LogType_STDOUT, job.stdout); err != nil {
+			return err
 		}
 	}
 	if req.Type == pb.LogType_STDERR || req.Type == pb.LogType_BOTH {
-		// chunk up stderr and stream them.
-		out := job.stderr
-		glog.Infof("err %q", out)
-		for _, s := range strings.Split(out, "\n") {
-			err := stream.Send(&pb.LogsResponse{
-				Type:  pb.LogType_STDOUT,
-				Chunk: s,
-			})
-			if err != nil {
-				return err
-			}
+		if err := streamLogs(stream, pb.LogType_STDERR, job.stderr); err != nil {
+			return err
 		}
 	}
 	return nil
