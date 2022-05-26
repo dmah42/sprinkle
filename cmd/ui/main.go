@@ -24,7 +24,7 @@ var (
 	port = flag.Int("port", 1248, "The port on which to listen for HTTP")
 	poll = flag.Duration("poll", 5*time.Minute, "The time to wait between discovery attempts")
 
-	addr  = flag.String("addr", "225.0.0.1:9999", "The multicast address to use for discovery")
+	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 	dport = flag.Int("dport", 9997, "The port on which to listen for discovery")
 
 	worker workerMap

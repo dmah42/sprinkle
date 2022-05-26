@@ -21,7 +21,7 @@ var (
 	cmd  = flag.String("cmd", "", "The command to run")
 	ram  = flag.Uint64("ram", 0, "The amount of RAM to reserve for the command")
 	wait = flag.Bool("wait", true, "Whether to wait for the command to complete")
-	addr = flag.String("addr", "225.0.0.1:9999", "The multicast address to use for discovery")
+	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 	port = flag.Int("port", 9998, "The port to listen on for discovery")
 )
 

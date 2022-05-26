@@ -16,7 +16,7 @@ import (
 
 var (
 	port = flag.Int("port", 5432, "The port on which to listen for RPC requests")
-	addr = flag.String("addr", "225.0.0.1:9999", "The host/ip and port on which to listen for multicast discovery pings")
+	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 )
 
 func multicastInterface() (*net.Interface, error) {
