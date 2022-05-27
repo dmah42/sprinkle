@@ -125,9 +125,9 @@ func main() {
 			}
 			switch chunk.Type {
 			case pb.LogType_STDOUT:
-				fmt.Fprintln(os.Stdout, chunk.Chunk)
+				fmt.Fprint(os.Stdout, chunk.Chunk)
 			case pb.LogType_STDERR:
-				fmt.Fprintln(os.Stderr, chunk.Chunk)
+				fmt.Fprint(os.Stderr, chunk.Chunk)
 			}
 		}
 	}

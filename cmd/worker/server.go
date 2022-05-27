@@ -94,7 +94,8 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		start: time.Now(),
 	}
 
-	scmd := strings.Fields(req.Cmd)
+	scmd := []string{"sh", "-c", fmt.Sprintf("%s", req.Cmd)}
+	glog.Infof("Running command %q with args %+v", scmd[0], scmd[1:])
 	j.cmd = exec.Command(scmd[0], scmd[1:]...)
 	stdout, err := j.cmd.StdoutPipe()
 	if err != nil {
