@@ -17,9 +17,22 @@ import (
 var (
 	port = flag.Int("port", 5432, "The port on which to listen for RPC requests")
 	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
+	iface = flag.String("iface", "", "The interface on which to listen. Defaults to first that supports multicast if unset")
 )
 
 func multicastInterface() (*net.Interface, error) {
+	if *iface != "" {
+		ifi, err := net.InterfaceByName(*iface)
+		if err != nil {
+			return nil, err
+		}
+		if ifi.Flags & net.FlagMulticast == 0 {
+			return nil, fmt.Errorf("iface %q does not support multicast", *iface)
+		}
+		return ifi, nil
+	}
+
+	// iface was not provided: search for the first multicast-supporting iface
 	ifis, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -68,7 +81,7 @@ func multicastListen(addr string) error {
 			}
 			s := string(b[:n])
 
-			glog.Infof("discovery ping %q [%d]", s, n)
+			glog.Infof("discovery ping %s [%d]", s, n)
 
 			// Reply!
 			raddr, err := net.ResolveUDPAddr("udp", s)

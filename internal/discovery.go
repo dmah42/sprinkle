@@ -66,7 +66,7 @@ func Ping(addr string, port int, addrs chan<- string) error {
 			}
 			s := string(b[:n])
 
-			glog.Infof("discovery ack %q [%d]", s, n)
+			glog.Infof("discovery ack %s [%d]", s, n)
 
 			addrs <- s
 		}
