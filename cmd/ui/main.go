@@ -22,7 +22,8 @@ import (
 
 var (
 	port = flag.Int("port", 1248, "The port on which to listen for HTTP")
-	poll = flag.Duration("poll", 5*time.Minute, "The time to wait between discovery attempts")
+	poll = flag.Duration("poll", 1*time.Minute, "The time to wait between discovery attempts")
+	statusPoll = flag.Duration("status_poll", 10*time.Second, "The time to wait between status updates")
 
 	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 	dport = flag.Int("dport", 9997, "The port on which to listen for discovery")
@@ -202,7 +203,7 @@ func updateWorkers(ctx context.Context) {
 			jobs.Unlock()
 		}
 
-		time.Sleep(1 * time.Minute)
+		time.Sleep(*statusPoll)
 	}
 }
 
