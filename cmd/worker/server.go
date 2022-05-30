@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
 	"github.com/mackerelio/go-osstat/memory"
 	"golang.org/x/net/context"
@@ -61,7 +61,7 @@ func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Statu
 		return nil, err
 	}
 
-	addrs, err := net.LookupHost(name)
+	ip, err := internal.ExternalIP()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Statu
 	}
 
 	return &pb.StatusResponse{
-		Ip:       addrs[0],
+		Ip:       ip.String(),
 		Hostname: name,
 		TotalRam: total,
 		FreeRam:  free,

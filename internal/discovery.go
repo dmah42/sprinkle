@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -75,16 +74,6 @@ func Ping(addr string, port int, addrs chan<- string) error {
 	}()
 
 	// Send out a ping.
-	name, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-
-	laddrs, err := net.LookupHost(name)
-	if err != nil {
-		return err
-	}
-
 	glog.Info("sending discovery ping on ", udpaddr)
 
 	pc, err := net.DialUDP("udp", nil, udpaddr)
@@ -93,7 +82,12 @@ func Ping(addr string, port int, addrs chan<- string) error {
 	}
 	defer pc.Close()
 
-	msg := net.JoinHostPort(laddrs[0], fmt.Sprintf("%d", port))
+	ip, err := ExternalIP()
+	if err != nil {
+		return err
+	}
+
+	msg := net.JoinHostPort(ip.String(), fmt.Sprintf("%d", port))
 	glog.Infof("sending msg %q", msg)
 	_, err = pc.Write([]byte(msg))
 	return err

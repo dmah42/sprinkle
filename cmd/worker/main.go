@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
 
+	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 
@@ -97,19 +97,13 @@ func multicastListen(addr string) error {
 			}
 			defer rc.Close()
 
-			name, err := os.Hostname()
+			ip, err := internal.ExternalIP()
 			if err != nil {
 				glog.Error(err)
 				break
 			}
 
-			addrs, err := net.LookupHost(name)
-			if err != nil {
-				glog.Error(err)
-				break
-			}
-
-			_, err = rc.Write([]byte(net.JoinHostPort(addrs[0], fmt.Sprintf("%d", *port))))
+			_, err = rc.Write([]byte(net.JoinHostPort(ip.String(), fmt.Sprintf("%d", *port))))
 			if err != nil {
 				glog.Error(err)
 				continue
