@@ -169,14 +169,14 @@ func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespon
 		if su != nil {
 			resp.Rusage = &pb.RUsage{
 				Utime: &pb.Timeval{
-					Sec:  su.Utime.Sec,
+					Sec:  int64(su.Utime.Sec),
 					Usec: int64(su.Utime.Usec),
 				},
 				Stime: &pb.Timeval{
-					Sec:  su.Stime.Sec,
+					Sec:  int64(su.Stime.Sec),
 					Usec: int64(su.Stime.Usec),
 				},
-				Maxrss: su.Maxrss,
+				Maxrss: int64(su.Maxrss),
 			}
 		}
 	}
