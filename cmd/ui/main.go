@@ -34,6 +34,12 @@ var (
 	//go:embed index.html
 	embedFS embed.FS
 	indexTmpl *template.Template
+
+	funcMap = template.FuncMap {
+		"toGB": func (bytes uint64) string {
+			return fmt.Sprintf("%.3f", float64(bytes) / (1000*1000*1000))
+		},
+	}
 )
 
 type workerMap struct {
@@ -76,7 +82,8 @@ type jobsMap struct {
 }
 
 func init() {
-	indexTmpl = template.Must(template.New("index.html").ParseFS(embedFS, "index.html"))
+	indexTmpl = template.Must(
+		template.New("index.html").Funcs(funcMap).ParseFS(embedFS, "index.html"))
 
 	worker.Lock()
 	worker.worker = make(map[string]*internal.Worker)

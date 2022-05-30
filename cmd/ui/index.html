@@ -9,7 +9,7 @@
 				background-image: radial-gradient(
 					rgba(0, 150, 0, 0.75), black 120%
 				);
-				height: 100vh;
+				height: 80vh;
 				color: white;
 				font-family: "Andale Mono", Courier, monospace;
 				text-shadow: 0 0 5px #C8C8C8;
@@ -34,20 +34,39 @@
 				background: #0080FF;
 				text-shadow: none;
 			}
+
+			table {
+				table-layout: fixed;
+				width: 80%;
+				border-collapse: collapse;
+				border: 2px dashed;
+			}
+
+			th, td {
+				padding: 20px;
+			}
+
+			tbody td {
+				text-align: center;
+			}
+
+			th {
+				border-bottom: 1px solid;
+			}
 		</style>
 	</head>
 	<body>
 		<h1>swarm</h1>
 			<h2>status</h2>
 			<table>
-			<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM</th><th>Free RAM</th></thead>
+			<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM (GB)</th><th>Free RAM (GB)</th></thead>
 			{{range $id, $status := .Status}}
 				<tr>
 					<td>{{$id}}</td>
 					<td>{{$status.Ip}}</td>
 					<td>{{$status.Hostname}}</td>
-					<td>{{$status.TotalRam}}</td>
-					<td>{{$status.FreeRam}}</td>
+					<td>{{toGB $status.TotalRam}}</td>
+					<td>{{toGB $status.FreeRam}}</td>
 				</tr>
 			{{end}}
 			</table>
