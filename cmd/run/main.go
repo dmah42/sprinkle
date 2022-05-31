@@ -62,9 +62,10 @@ func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *internal.
 		if stat.FreeRam > ram {
 			if worker == nil || stat.FreeRam < bestFreeRam {
 				// Close out any worker we previously found
-				// TODO: error checking
 				if worker != nil {
-					worker.Close()
+					if err := worker.Close(); err != nil {
+						glog.Warningf("failed to close worker: %s", err)
+					}
 				}
 				worker = s
 				bestFreeRam = stat.FreeRam
@@ -91,8 +92,9 @@ func main() {
 	for i := 0; i < *retries; i++ {
 		// Close worker from previous attempt
 		if worker != nil {
-			// TODO: error checking
-			worker.Close()
+			if err := worker.Close(); err != nil {
+				glog.Warningf("failed to close worker: %s", err)
+			}
 		}
 		worker = bestWorker(ctx, *ram, addrs)
 		if worker == nil {
