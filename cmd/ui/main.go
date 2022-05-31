@@ -1,4 +1,4 @@
-// Package ui defines a UI for visualizing a swarm.
+// Package ui defines a UI for visualizing a set of workers and the jobs running on them.
 package main
 
 import (
@@ -13,19 +13,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dominichamon/swarm/internal"
+	"github.com/dominichamon/sprinkle/internal"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/swarm/api/swarm"
+	pb "github.com/dominichamon/sprinkle/api/sprinkle"
 )
 
 var (
-	port = flag.Int("port", 1248, "The port on which to listen for HTTP")
-	poll = flag.Duration("poll", 1*time.Minute, "The time to wait between discovery attempts")
+	port       = flag.Int("port", 1248, "The port on which to listen for HTTP")
+	poll       = flag.Duration("poll", 1*time.Minute, "The time to wait between discovery attempts")
 	statusPoll = flag.Duration("status_poll", 10*time.Second, "The time to wait between status updates")
 
-	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
+	addr  = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 	dport = flag.Int("dport", 9997, "The port on which to listen for discovery")
 
 	worker workerMap
@@ -33,12 +33,12 @@ var (
 	jobs   jobsMap
 
 	//go:embed index.html
-	embedFS embed.FS
+	embedFS   embed.FS
 	indexTmpl *template.Template
 
-	funcMap = template.FuncMap {
-		"toGB": func (bytes uint64) string {
-			return fmt.Sprintf("%.3f", float64(bytes) / (1000*1000*1000))
+	funcMap = template.FuncMap{
+		"toGB": func(bytes uint64) string {
+			return fmt.Sprintf("%.3f", float64(bytes)/(1000*1000*1000))
 		},
 	}
 )

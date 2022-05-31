@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/swarm/api/swarm"
+	pb "github.com/dominichamon/sprinkle/api/sprinkle"
 )
 
 type Worker struct {

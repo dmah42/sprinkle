@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dominichamon/swarm/internal"
+	"github.com/dominichamon/sprinkle/internal"
 	"github.com/golang/glog"
 	"github.com/mackerelio/go-osstat/loadavg"
 	"github.com/mackerelio/go-osstat/memory"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/swarm/api/swarm"
+	pb "github.com/dominichamon/sprinkle/api/sprinkle"
 )
 
 var (

@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dominichamon/swarm/internal"
+	"github.com/dominichamon/sprinkle/internal"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 
-	pb "github.com/dominichamon/swarm/api/swarm"
+	pb "github.com/dominichamon/sprinkle/api/sprinkle"
 )
 
 var (

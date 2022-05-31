@@ -1,90 +1,102 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta http-equiv="refresh" content="10">
-		<title>swarm</title>
 
-		<style>
-			body {
-				background-color: black;
-				background-image: radial-gradient(
-					rgba(0, 150, 0, 0.75), black 120%
-				);
-				height: 100vh;
-				color: white;
-				font-family: "Andale Mono", Courier, monospace;
-				text-shadow: 0 0 5px #C8C8C8;
-			}
+<head>
+	<meta http-equiv="refresh" content="10">
+	<title>sprinkle</title>
 
-			body::after {
-				content: "";
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 100vw;
-				height: 100vh;
-				background: repeating-linear-gradient(
-					0deg,
+	<style>
+		body {
+			background-color: black;
+			background-image: radial-gradient(rgba(0, 150, 0, 0.75), black 120%);
+			height: 100vh;
+			color: white;
+			font-family: "Andale Mono", Courier, monospace;
+			text-shadow: 0 0 5px #C8C8C8;
+		}
+
+		body::after {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100vw;
+			height: 100vh;
+			background: repeating-linear-gradient(0deg,
 					black 25%,
 					black 25% 2px,
 					transparent 2px,
 					transparent 4px);
-			}
+		}
 
-			::selection {
-				background: #0080FF;
-				text-shadow: none;
-			}
+		::selection {
+			background: #0080FF;
+			text-shadow: none;
+		}
 
-			table {
-				table-layout: auto;
-				width: 80%;
-				border-collapse: collapse;
-				border: 2px dashed;
-			}
+		table {
+			table-layout: auto;
+			width: 80%;
+			border-collapse: collapse;
+			border: 2px dashed;
+		}
 
-			th, td {
-				padding: 20px;
-			}
+		th,
+		td {
+			padding: 20px;
+		}
 
-			tbody td {
-				text-align: center;
-			}
+		tbody td {
+			text-align: center;
+		}
 
-			th {
-				border-bottom: 1px solid;
-			}
-		</style>
-	</head>
-	<body>
-		<h1>swarm</h1>
-			<h2>status</h2>
-			<table>
-			<thead><th>Id</th><th>IP</th><th>Host</th><th>Total RAM (GB)</th><th>Free RAM (GB)</th></thead>
-			{{range $id, $status := .Status}}
-				<tr>
-					<td>{{$id}}</td>
-					<td>{{$status.Ip}}</td>
-					<td>{{$status.Hostname}}</td>
-					<td>{{toGB $status.TotalRam}}</td>
-					<td>{{toGB $status.FreeRam}}</td>
-				</tr>
-			{{end}}
-			</table>
+		th {
+			border-bottom: 1px solid;
+		}
+	</style>
+</head>
 
-			<h2>jobs</h2>
-			<table>
-			<thead><th>Id</th><th>Start time</th><th>Exited</th><th>Success</th></thead>
-			{{range $id, $jobs := .Jobs}}
-				{{range $_, $job := $jobs}}
-					<tr>
-						<td>{{$id}}</td>
-						<td>{{$job.StartTime}}</td>
-						<td>{{$job.Exited}}</td>
-						<td>{{$job.Success}}</td>
-					</tr>
-				{{end}}
-			{{end}}
-			</table>
-	</body>
+<body>
+	<h1>sprinkle</h1>
+	<h2>status</h2>
+	<table>
+		<thead>
+			<th>Id</th>
+			<th>IP</th>
+			<th>Host</th>
+			<th>Total RAM (GB)</th>
+			<th>Free RAM (GB)</th>
+		</thead>
+		{{range $id, $status := .Status}}
+		<tr>
+			<td>{{$id}}</td>
+			<td>{{$status.Ip}}</td>
+			<td>{{$status.Hostname}}</td>
+			<td>{{toGB $status.TotalRam}}</td>
+			<td>{{toGB $status.FreeRam}}</td>
+		</tr>
+		{{end}}
+	</table>
+
+	<h2>jobs</h2>
+	<table>
+		<thead>
+			<th>Id</th>
+			<th>Start time</th>
+			<th>Exited</th>
+			<th>Success</th>
+		</thead>
+		{{range $id, $jobs := .Jobs}}
+		{{range $_, $job := $jobs}}
+		<tr>
+			<td>{{$id}}</td>
+			<td>{{$job.StartTime}}</td>
+			<td>{{$job.Exited}}</td>
+			<td>{{$job.Success}}</td>
+		</tr>
+		{{end}}
+		{{end}}
+	</table>
+</body>
+
 </html>

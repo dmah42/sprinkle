@@ -1,4 +1,4 @@
-module github.com/dominichamon/swarm
+module github.com/dominichamon/sprinkle
 
 go 1.18
 

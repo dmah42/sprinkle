@@ -7,16 +7,16 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dominichamon/swarm/internal"
+	"github.com/dominichamon/sprinkle/internal"
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 
-	pb "github.com/dominichamon/swarm/api/swarm"
+	pb "github.com/dominichamon/sprinkle/api/sprinkle"
 )
 
 var (
-	port = flag.Int("port", 5432, "The port on which to listen for RPC requests")
-	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
+	port  = flag.Int("port", 5432, "The port on which to listen for RPC requests")
+	addr  = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
 	iface = flag.String("iface", "", "The interface on which to listen for pings. Defaults to first that supports multicast if unset")
 )
 
@@ -26,7 +26,7 @@ func multicastInterface() (*net.Interface, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ifi.Flags & net.FlagMulticast == 0 {
+		if ifi.Flags&net.FlagMulticast == 0 {
 			return nil, fmt.Errorf("iface %q does not support multicast", *iface)
 		}
 		return ifi, nil
