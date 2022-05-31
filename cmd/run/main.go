@@ -1,4 +1,4 @@
-// Package main defines a command line for interacting with a swarm.
+// Package main defines a command line for running a command against the workers
 package main
 
 import (

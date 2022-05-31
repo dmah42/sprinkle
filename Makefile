@@ -1,13 +1,13 @@
 .PHONY: all
-all: worker swarm ui
+all: worker run ui
 
 OUT=bin
 
 .PHONY: worker
 worker: $(OUT)/worker
 
-.PHONY: swarm
-swarm: $(OUT)/swarm
+.PHONY: run
+run: $(OUT)/run
 
 .PHONY: ui
 ui: $(OUT)/ui
@@ -25,9 +25,9 @@ $(OUT)/worker: internal/*.go api/swarm/*.pb.go cmd/worker/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/worker
 
-$(OUT)/swarm: internal/*.go api/swarm/*.pb.go cmd/swarm/*.go
+$(OUT)/run: internal/*.go api/swarm/*.pb.go cmd/run/*.go
 	mkdir -p $(OUT)
-	go build -o $@ ./cmd/swarm
+	go build -o $@ ./cmd/run
 
 $(OUT)/ui: internal/*.go api/swarm/*.pb.go cmd/ui/*.go cmd/ui/*.html
 	mkdir -p $(OUT)
