@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
@@ -18,11 +19,13 @@ import (
 )
 
 var (
-	cmd  = flag.String("cmd", "", "The command to run")
-	ram  = flag.Uint64("ram", 0, "The amount of RAM to reserve for the command")
-	wait = flag.Bool("wait", true, "Whether to wait for the command to complete")
-	addr = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
-	port = flag.Int("port", 9998, "The port to listen on for discovery")
+	cmd       = flag.String("cmd", "", "The command to run")
+	ram       = flag.Uint64("ram", 0, "The amount of RAM to reserve for the command")
+	wait      = flag.Bool("wait", true, "Whether to wait for the command to complete")
+	addr      = flag.String("addr", "239.192.0.1:9999", "The multicast address to use for discovery")
+	port      = flag.Int("port", 9998, "The port to listen on for discovery")
+	retries   = flag.Int("retries", 3, "Number of times to retry running the command")
+	retryWait = flag.Duration("retry_wait", 10*time.Second, "time between retries")
 )
 
 type client struct {
@@ -63,6 +66,11 @@ func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *internal.
 
 		if stat.FreeRam > ram {
 			if worker == nil || stat.FreeRam < bestFreeRam {
+				// Close out any worker we previously found
+				// TODO: error checking
+				if worker != nil {
+					worker.Close()
+				}
 				worker = s
 				bestFreeRam = stat.FreeRam
 			}
@@ -82,26 +90,50 @@ func main() {
 		glog.Exit("failed to find workers: +v", err)
 	}
 
-	worker := bestWorker(ctx, *ram, addrs)
-	if worker == nil {
-		glog.Exit(fmt.Errorf("failed to identify best worker"))
+	var worker *internal.Worker
+	var resp *pb.RunResponse
+	var errs []error
+	for i := 0; i < *retries; i++ {
+		// Close worker from previous attempt
+		if worker != nil {
+			// TODO: error checking
+			worker.Close()
+		}
+		worker = bestWorker(ctx, *ram, addrs)
+		if worker == nil {
+			errs = append(errs, fmt.Errorf("failed to identify best worker"))
+			time.Sleep(*retryWait)
+			continue
+		}
+
+		glog.Infof("best worker found: %q", worker.Id)
+
+		// Run command.
+		var err error
+		resp, err = worker.Client.Run(ctx, &pb.RunRequest{
+			Cmd: *cmd,
+			Ram: *ram,
+		})
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to run command: %s", err))
+			time.Sleep(*retryWait)
+			continue
+		}
+		break
 	}
+
+	if len(errs) != 0 {
+		for e := range errs {
+			glog.Errorln(e)
+		}
+		glog.Exit()
+	}
+
 	defer func() {
 		if err := worker.Close(); err != nil {
 			glog.Exit(err)
 		}
 	}()
-
-	glog.Infof("best worker found: %q", worker.Id)
-
-	// Run command.
-	resp, err := worker.Client.Run(ctx, &pb.RunRequest{
-		Cmd: *cmd,
-		Ram: *ram,
-	})
-	if err != nil {
-		glog.Exit(err)
-	}
 
 	job := resp.JobId
 	glog.Infof("running job %d on worker %q", job, worker.Id)
