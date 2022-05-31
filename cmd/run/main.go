@@ -28,11 +28,6 @@ var (
 	retryWait = flag.Duration("retry_wait", 10*time.Second, "time between retries")
 )
 
-type client struct {
-	hostname string
-	port     int
-}
-
 func bestWorker(ctx context.Context, ram uint64, addrs <-chan string) *internal.Worker {
 	var worker *internal.Worker
 	bestFreeRam := uint64(math.Inf(1))
