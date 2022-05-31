@@ -150,14 +150,15 @@ func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
 
 		stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
 		if err != nil {
-			glog.Warning(err)
+			glog.Warningf("Removing %s: %s", s.Id, err)
+			status.Lock()
+			delete(status.status, s.Id)
+			status.Unlock()
 		}
 		glog.Infof("Status of %s: %+v", s.Id, stat)
 		status.Lock()
 		status.status[s.Id] = stat
 		status.Unlock()
-
-		// TODO: remove old worker
 	}
 }
 
