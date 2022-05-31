@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/dominichamon/swarm/internal"
 	"github.com/golang/glog"
+	"github.com/mackerelio/go-osstat/loadavg"
 	"github.com/mackerelio/go-osstat/memory"
 	"golang.org/x/net/context"
 
@@ -21,6 +23,8 @@ import (
 var (
 	jobId int64
 	jobs  jobMap
+
+	loadLimit = flag.Float64("load_limit", 5.0, "defines the maximum load the worker can be under before rejecting jobs")
 )
 
 type jobMap struct {
@@ -35,7 +39,7 @@ func init() {
 }
 
 type job struct {
-	start          time.Time
+	start time.Time
 	// TODO: replace with reference to binary/job.. see golang/groupcache
 	cmd            *exec.Cmd
 	stdout, stderr string
@@ -52,7 +56,15 @@ func ram() (uint64, uint64, error) {
 		return 0, 0, err
 	}
 
-	return memory.Total, memory.Free, nil
+	return memory.Total, memory.Available, nil
+}
+
+func load() (float64, float64, error) {
+	load, err := loadavg.Get()
+	if err != nil {
+		return 0, 0, err
+	}
+	return load.Loadavg1, load.Loadavg5, nil
 }
 
 func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.StatusResponse, error) {
@@ -66,7 +78,12 @@ func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Statu
 		return nil, err
 	}
 
-	total, free, err := ram()
+	total, avail, err := ram()
+	if err != nil {
+		return nil, err
+	}
+
+	_, load5, err := load()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +92,8 @@ func (s *workerServer) Status(_ context.Context, _ *pb.StatusRequest) (*pb.Statu
 		Ip:       ip.String(),
 		Hostname: name,
 		TotalRam: total,
-		FreeRam:  free,
+		FreeRam:  avail,
+		Load:     load5,
 	}, nil
 }
 
@@ -85,7 +103,14 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		return nil, fmt.Errorf("failed to determine free RAM: %s", err)
 	}
 	if req.Ram > fr {
-		return nil, fmt.Errorf("not enough RAM; %d vs %d", req.Ram, fr)
+		return nil, fmt.Errorf("not enough available RAM; %d vs %d", req.Ram, fr)
+	}
+	_, load5, err := load()
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine load: %s", err)
+	}
+	if load5 > *loadLimit {
+		return nil, fmt.Errorf("under too high load: %.3f (limit: %.3f)", load5, *loadLimit)
 	}
 
 	// TODO: enqueue the job for later processing to limit jobs per worker
@@ -94,7 +119,7 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		start: time.Now(),
 	}
 
-	scmd := []string{"sh", "-c", fmt.Sprintf("%s", req.Cmd)}
+	scmd := []string{"sh", "-c", req.Cmd}
 	glog.Infof("Running command %q with args %+v", scmd[0], scmd[1:])
 	j.cmd = exec.Command(scmd[0], scmd[1:]...)
 	stdout, err := j.cmd.StdoutPipe()

@@ -4,14 +4,14 @@ option go_package = "github.com/dominichamon/swarm/api/swarm";
 
 package swarm;
 
-message StatusRequest {
-}
+message StatusRequest {}
 
 message StatusResponse {
   string ip = 1;
   string hostname = 2;
   uint64 total_ram = 3;
   uint64 free_ram = 4;
+  double load = 5;
 }
 
 message RunRequest {
@@ -20,13 +20,9 @@ message RunRequest {
   uint64 ram = 2;
 }
 
-message RunResponse {
-  int64 job_id = 1;
-}
+message RunResponse { int64 job_id = 1; }
 
-message JobRequest {
-  int64 id = 1;
-}
+message JobRequest { int64 id = 1; }
 
 message JobResponse {
   int64 start_time = 1;
@@ -35,12 +31,9 @@ message JobResponse {
   RUsage rusage = 4;
 }
 
-message JobsRequest {
-}
+message JobsRequest {}
 
-message JobsResponse {
-  repeated int64 id = 1;
-}
+message JobsResponse { repeated int64 id = 1; }
 
 message Timeval {
   int64 sec = 1;
