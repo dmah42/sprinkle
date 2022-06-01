@@ -218,9 +218,17 @@ func updateWorkers(ctx context.Context) {
 		}
 		worker.RUnlock()
 
+		// clear statuses before getting all the new ones.
+		status.Lock()
+		for k := range status.status {
+			delete(status.status, k)
+		}
+		status.Unlock()
+
 		for _, s := range ss {
 			stat, err := s.Client.Status(ctx, &pb.StatusRequest{})
 			if err != nil {
+				// TODO: consider removing the worker at this point (though it should disappear on the next discovery poll)
 				glog.Warningf("Failed to get status for %+v: %s", s, err)
 				continue
 			}
