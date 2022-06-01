@@ -83,20 +83,24 @@
 		<thead>
 			<th>Worker Id</th>
 			<th>Job Id</th>
+			<th>State</th>
 			<th>Start time</th>
-			<th>Exited</th>
+			<th>End time</th>
+			<th>Duration</th>
 			<th>Success</th>
 		</thead>
 		{{range $id, $jobs := .Jobs}}
-      {{range $jid, $job := $jobs}}
-      <tr>
-        <td>{{$id}}</td>
-        <td>{{$jid}}</td>
-        <td>{{$job.StartTime}}</td>
-        <td>{{$job.Exited}}</td>
-        <td>{{$job.Success}}</td>
-      </tr>
-      {{end}}
+		{{range $jid, $job := $jobs}}
+		<tr>
+			<td>{{$id}}</td>
+			<td>{{$jid}}</td>
+			<td>{{$job.State}}</td>
+			<td>{{$job.StartTime}}</td>
+			<td>{{$job.EndTime}}</td>
+			<td>{{duration $job.StartTime $job.EndTime}}</td>
+			<td>{{$job.Success}}</td>
+		</tr>
+		{{end}}
 		{{end}}
 	</table>
 </body>

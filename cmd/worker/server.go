@@ -148,10 +148,6 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		j := jobs.jobs[id]
 		jobs.RUnlock()
 
-		if err := j.cmd.Wait(); err != nil {
-			fmt.Println(err)
-		}
-
 		out, err := ioutil.ReadAll(stdout)
 		if err != nil {
 			glog.Error(err)
@@ -166,6 +162,10 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 			j.stderr = fmt.Sprintf("[E] Failed to read stderr for %q: %s", req.Cmd, err)
 		} else {
 			j.stderr = string(out)
+		}
+
+		if err := j.cmd.Wait(); err != nil {
+			fmt.Println(err)
 		}
 
 		glog.Infof("Marking job %d as complete", id)
@@ -189,15 +189,13 @@ func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespon
 		StartTime: job.start.Unix(),
 		State:     pb.JobResponse_STATE_UNKNOWN,
 	}
+	// TODO: when jobs are queued: return pending here.
+	resp.State = pb.JobResponse_STATE_RUNNING
 	if job.cmd.ProcessState != nil {
 		resp.Success = job.cmd.ProcessState.Success()
 
-		if job.cmd.ProcessState.Exited() {
-			resp.EndTime = job.end.Unix()
-			resp.State = pb.JobResponse_STATE_COMPLETE
-		} else {
-			resp.State = pb.JobResponse_STATE_RUNNING
-		}
+		resp.EndTime = job.end.Unix()
+		resp.State = pb.JobResponse_STATE_COMPLETE
 
 		su := job.cmd.ProcessState.SysUsage().(*syscall.Rusage)
 		if su != nil {

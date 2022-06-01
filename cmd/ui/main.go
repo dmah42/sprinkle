@@ -40,6 +40,12 @@ var (
 		"toGB": func(bytes uint64) string {
 			return fmt.Sprintf("%.3f", float64(bytes)/(1000*1000*1000))
 		},
+		"duration": func(start int64, end int64) time.Duration {
+			if end == 0 {
+				return 0
+			}
+			return time.Unix(end, 0).Sub(time.Unix(start, 0))
+		},
 	}
 )
 
