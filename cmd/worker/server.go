@@ -21,8 +21,7 @@ import (
 )
 
 var (
-	jobId int64
-	jobs  jobMap
+	jobs jobMap
 
 	loadLimit = flag.Float64("load_limit", 5.0, "defines the maximum load the worker can be under before rejecting jobs")
 )
@@ -138,8 +137,7 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 	}
 
 	jobs.Lock()
-	jobId += 1
-	id := jobId
+	id := int64(j.cmd.Process.Pid)
 	jobs.jobs[id] = j
 	jobs.Unlock()
 
