@@ -28,6 +28,12 @@ $(OUT)/run: internal/*.go api/sprinkle/*.pb.go cmd/run/*.go
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/run
 
-$(OUT)/ui: internal/*.go api/sprinkle/*.pb.go cmd/ui/*.go cmd/ui/*.html
+$(OUT)/ui: internal/*.go api/sprinkle/*.pb.go cmd/ui/*.go cmd/ui/*.html assets/*
 	mkdir -p $(OUT)
 	go build -o $@ ./cmd/ui
+	cp assets/favicon.ico $(OUT)/
+	cp assets/logo.png $(OUT)/
+
+# TODO: convert favicon/logo from svg
+# convert -density 1200 -resize 200x200 -background None assets/donut-with-sprinkles.svg assets/logo.png
+# convert -density 1200 -resize 16x16 -background None assets/donut-with-sprinkles.svg assets/favicon.ico

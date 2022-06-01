@@ -8,11 +8,11 @@
 	<style>
 		body {
 			background-color: black;
-			background-image: radial-gradient(rgba(0, 150, 0, 0.75), black 120%);
+			background-image: radial-gradient(rgba(0, 150, 0, 0.5), black 120%);
 			height: 100vh;
 			color: white;
-			font-family: "Andale Mono", Courier, monospace;
-			text-shadow: 0 0 5px #C8C8C8;
+			font-family: Courier, monospace;
+			text-shadow: 0 0 3px #C8C8C8;
 		}
 
 		body::after {
@@ -53,10 +53,24 @@
 		th {
 			border-bottom: 1px solid;
 		}
+
+		#logo {
+			position: relative;
+		}
+
+		.logo {
+			position: absolute;
+			top: 0px;
+			right: 0px;
+			z-index: -1;
+		}
 	</style>
 </head>
 
 <body>
+	<div id="logo">
+		<img src="/logo.png" alt="donut with sprinkles" class="logo" />
+	</div>
 	<h1>sprinkle</h1>
 	<h2>status</h2>
 	<table>

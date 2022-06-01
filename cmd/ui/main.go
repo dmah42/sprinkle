@@ -9,6 +9,9 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -101,7 +104,7 @@ func handleError(w http.ResponseWriter, code int, err error) {
 	glog.Error(err)
 }
 
-func Index(w http.ResponseWriter, req *http.Request) {
+func index(w http.ResponseWriter, req *http.Request) {
 	status.RLock()
 	defer status.RUnlock()
 
@@ -135,6 +138,33 @@ func Index(w http.ResponseWriter, req *http.Request) {
 		handleError(w, http.StatusInternalServerError, err)
 		return
 	}
+}
+
+func favIcon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/x-icon")
+	w.Header().Set("Cache-Control", "public, max-age=7776000")
+
+	ex, err := os.Executable()
+	if err != nil {
+		http.Error(w, "unable to get working directory", http.StatusInternalServerError)
+	}
+	pwd := filepath.Dir(ex)
+
+	glog.Infof("serving %q", path.Join(pwd, "favicon.ico"))
+	http.ServeFile(w, r, path.Join(pwd, "favicon.ico"))
+}
+
+func logo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+
+	ex, err := os.Executable()
+	if err != nil {
+		http.Error(w, "unable to get working directory", http.StatusInternalServerError)
+	}
+	pwd := filepath.Dir(ex)
+
+	glog.Infof("serving %q", path.Join(pwd, "logo.png"))
+	http.ServeFile(w, r, path.Join(pwd, "logo.png"))
 }
 
 func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
@@ -243,7 +273,9 @@ func main() {
 	}()
 	go updateWorkers(ctx)
 
-	http.HandleFunc("/", Index)
+	http.HandleFunc("/", index)
+	http.HandleFunc("/favicon.ico", favIcon)
+	http.HandleFunc("/logo.png", logo)
 	glog.Infof("listening on port %d", *port)
 	glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
