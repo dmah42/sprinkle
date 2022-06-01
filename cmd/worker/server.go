@@ -40,6 +40,7 @@ func init() {
 
 type job struct {
 	start time.Time
+	end   time.Time
 	// TODO: replace with reference to binary/job.. see golang/groupcache
 	cmd            *exec.Cmd
 	stdout, stderr string
@@ -147,6 +148,10 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 		j := jobs.jobs[id]
 		jobs.RUnlock()
 
+		if err := j.cmd.Wait(); err != nil {
+			fmt.Println(err)
+		}
+
 		out, err := ioutil.ReadAll(stdout)
 		if err != nil {
 			glog.Error(err)
@@ -163,12 +168,9 @@ func (s *workerServer) Run(_ context.Context, req *pb.RunRequest) (*pb.RunRespon
 			j.stderr = string(out)
 		}
 
-		if err := j.cmd.Wait(); err != nil {
-			fmt.Println(err)
-		}
-
 		glog.Infof("Marking job %d as complete", id)
 		j.complete = true
+		j.end = time.Now()
 
 		jobs.Lock()
 		jobs.jobs[id] = j
@@ -185,10 +187,17 @@ func (s *workerServer) Job(_ context.Context, req *pb.JobRequest) (*pb.JobRespon
 
 	resp := &pb.JobResponse{
 		StartTime: job.start.Unix(),
+		State:     pb.JobResponse_STATE_UNKNOWN,
 	}
 	if job.cmd.ProcessState != nil {
-		resp.Exited = job.cmd.ProcessState.Exited()
 		resp.Success = job.cmd.ProcessState.Success()
+
+		if job.cmd.ProcessState.Exited() {
+			resp.EndTime = job.end.Unix()
+			resp.State = pb.JobResponse_STATE_COMPLETE
+		} else {
+			resp.State = pb.JobResponse_STATE_RUNNING
+		}
 
 		su := job.cmd.ProcessState.SysUsage().(*syscall.Rusage)
 		if su != nil {

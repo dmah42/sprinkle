@@ -25,10 +25,20 @@ message RunResponse { int64 job_id = 1; }
 message JobRequest { int64 id = 1; }
 
 message JobResponse {
+  enum State {
+    STATE_UNKNOWN = 0;
+    STATE_PENDING = 1;
+    STATE_RUNNING = 3;
+    STATE_COMPLETE = 4;
+  }
+
   int64 start_time = 1;
-  bool exited = 2;
+  int64 end_time = 5;
+  State state = 6;
   bool success = 3;
   RUsage rusage = 4;
+
+  reserved 2; // bool exited = 2
 }
 
 message JobsRequest {}
