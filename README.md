@@ -2,6 +2,8 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/dominichamon/sprinkle.svg)](https://pkg.go.dev/github.com/dominichamon/sprinkle)
 
+![donut with sprinkles](/assets/logo.png)
+
 Run jobs on distributed machines easily. No master negotiation or consensus in
 sight: All parts take an `addr` command line argument that refers to a UDP
 multicast address on which workers can be discovered.
