@@ -78,8 +78,7 @@ type statusMap struct {
 
 type jobsMap struct {
 	sync.RWMutex
-	// TODO: add job id by making the value a map.
-	jobs map[string][]*pb.JobResponse
+	jobs map[string]map[int64]*pb.JobResponse
 }
 
 func init() {
@@ -95,7 +94,7 @@ func init() {
 	status.Unlock()
 
 	jobs.Lock()
-	jobs.jobs = make(map[string][]*pb.JobResponse)
+	jobs.jobs = make(map[string]map[int64]*pb.JobResponse)
 	jobs.Unlock()
 }
 
@@ -114,7 +113,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 
 	data := struct {
 		Status map[string]*pb.StatusResponse
-		Jobs   map[string][]*pb.JobResponse
+		Jobs   map[string]map[int64]*pb.JobResponse
 	}{status.status, jobs.jobs}
 
 	if err := indexTmpl.Execute(w, data); err != nil {
@@ -190,14 +189,14 @@ func updateWorkers(ctx context.Context) {
 				continue
 			}
 			glog.Infof("Jobs for %s: %+v", s.Id, jobsResp)
-			jrs := make([]*pb.JobResponse, len(jobsResp.Id))
-			for i, id := range jobsResp.Id {
+			jrs := make(map[int64]*pb.JobResponse)
+			for _, id := range jobsResp.Id {
 				j, err := s.Client.Job(ctx, &pb.JobRequest{Id: id})
 				if err != nil {
 					glog.Warningf("Failed to get job for %+v, %d: %s", s, id, err)
 					continue
 				}
-				jrs[i] = j
+				jrs[id] = j
 			}
 			jobs.Lock()
 			jobs.jobs[s.Id] = jrs
