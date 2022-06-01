@@ -60,21 +60,12 @@ func (m *workerMap) add(s *internal.Worker) {
 	m.Unlock()
 }
 
-func (m *workerMap) remove(s *internal.Worker) error {
-	m.RLock()
-	defer m.RUnlock()
-	if _, ok := m.worker[s.Id]; !ok {
-		return fmt.Errorf("worker %q not found", s.Id)
-	}
-
+func (m *workerMap) clear() {
 	m.Lock()
-	defer m.Unlock()
-	if _, ok := m.worker[s.Id]; !ok {
-		return fmt.Errorf("worker %q not found", s.Id)
+	for k := range m.worker {
+		delete(m.worker, k)
 	}
-	delete(m.worker, s.Id)
-
-	return nil
+	m.Unlock()
 }
 
 type statusMap struct {
@@ -118,9 +109,27 @@ func Index(w http.ResponseWriter, req *http.Request) {
 	defer jobs.RUnlock()
 
 	data := struct {
-		Status map[string]*pb.StatusResponse
-		Jobs   map[string]map[int64]*pb.JobResponse
-	}{status.status, jobs.jobs}
+		Status       map[string]*pb.StatusResponse
+		ActiveJobs   map[string]map[int64]*pb.JobResponse
+		InactiveJobs map[string]map[int64]*pb.JobResponse
+	}{
+		status.status,
+		make(map[string]map[int64]*pb.JobResponse),
+		make(map[string]map[int64]*pb.JobResponse),
+	}
+
+	for id, js := range jobs.jobs {
+		data.ActiveJobs[id] = make(map[int64]*pb.JobResponse)
+		data.InactiveJobs[id] = make(map[int64]*pb.JobResponse)
+		for jid, job := range js {
+			switch job.State {
+			case pb.JobResponse_STATE_PENDING, pb.JobResponse_STATE_RUNNING:
+				data.ActiveJobs[id][jid] = job
+			case pb.JobResponse_STATE_UNKNOWN, pb.JobResponse_STATE_COMPLETE:
+				data.InactiveJobs[id][jid] = job
+			}
+		}
+	}
 
 	if err := indexTmpl.Execute(w, data); err != nil {
 		handleError(w, http.StatusInternalServerError, err)
@@ -129,6 +138,7 @@ func Index(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleDiscoveryAcks(ctx context.Context, addrs <-chan string) {
+	worker.clear()
 	for saddr := range addrs {
 		glog.Infof("Discovered worker at %s", saddr)
 

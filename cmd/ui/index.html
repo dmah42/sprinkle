@@ -79,6 +79,34 @@
 	</table>
 
 	<h2>jobs</h2>
+	<h3>active</h3>
+	{{$num_active_jobs := len .ActiveJobs}}
+	{{if ne $num_active_jobs 0}}
+	<table>
+		<thead>
+			<th>Worker Id</th>
+			<th>Job Id</th>
+			<th>State</th>
+			<th>Start time</th>
+		</thead>
+		{{range $id, $jobs := .ActiveJobs}}
+		{{range $jid, $job := $jobs}}
+		<tr>
+			<td>{{$id}}</td>
+			<td>{{$jid}}</td>
+			<td>{{$job.State}}</td>
+			<td>{{$job.StartTime}}</td>
+		</tr>
+		{{end}}
+		{{end}}
+	</table>
+	{{else}}
+	<p>no active jobs</p>
+	{{end}}
+
+	<h3>inactive</h3>
+	{{$num_inactive_jobs := len .InactiveJobs}}
+	{{if ne $num_inactive_jobs 0}}
 	<table>
 		<thead>
 			<th>Worker Id</th>
@@ -89,7 +117,7 @@
 			<th>Duration</th>
 			<th>Success</th>
 		</thead>
-		{{range $id, $jobs := .Jobs}}
+		{{range $id, $jobs := .InactiveJobs}}
 		{{range $jid, $job := $jobs}}
 		<tr>
 			<td>{{$id}}</td>
@@ -103,6 +131,9 @@
 		{{end}}
 		{{end}}
 	</table>
+	{{else}}
+	<p>No inactive jobs</p>
+	{{end}}
 </body>
 
 </html>
