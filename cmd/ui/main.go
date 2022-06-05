@@ -49,6 +49,14 @@ var (
 			}
 			return time.Unix(end, 0).Sub(time.Unix(start, 0))
 		},
+		"hasJobs": func(jobs map[string]map[int64]*pb.JobResponse) bool {
+			for _, jr := range jobs {
+				if len(jr) > 0 {
+					return true
+				}
+			}
+			return false
+		},
 	}
 )
 

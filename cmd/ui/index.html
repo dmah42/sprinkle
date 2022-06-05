@@ -94,14 +94,13 @@
 
 	<h2>jobs</h2>
 	<h3>active</h3>
-	{{$num_active_jobs := len .ActiveJobs}}
-	{{if ne $num_active_jobs 0}}
+	{{if hasJobs .ActiveJobs}}
 	<table>
 		<thead>
-			<th>Worker Id</th>
-			<th>Job Id</th>
-			<th>State</th>
-			<th>Start time</th>
+			<th>worker id</th>
+			<th>job id</th>
+			<th>state</th>
+			<th>start time</th>
 		</thead>
 		{{range $id, $jobs := .ActiveJobs}}
 		{{range $jid, $job := $jobs}}
@@ -119,17 +118,16 @@
 	{{end}}
 
 	<h3>inactive</h3>
-	{{$num_inactive_jobs := len .InactiveJobs}}
-	{{if ne $num_inactive_jobs 0}}
+	{{if hasJobs .InactiveJobs}}
 	<table>
 		<thead>
-			<th>Worker Id</th>
-			<th>Job Id</th>
-			<th>State</th>
-			<th>Start time</th>
-			<th>End time</th>
-			<th>Duration</th>
-			<th>Success</th>
+			<th>worker id</th>
+			<th>job id</th>
+			<th>state</th>
+			<th>start time</th>
+			<th>end time</th>
+			<th>duration</th>
+			<th>success</th>
 		</thead>
 		{{range $id, $jobs := .InactiveJobs}}
 		{{range $jid, $job := $jobs}}
@@ -146,7 +144,7 @@
 		{{end}}
 	</table>
 	{{else}}
-	<p>No inactive jobs</p>
+	<p>no inactive jobs</p>
 	{{end}}
 </body>
 
