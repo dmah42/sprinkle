@@ -1,0 +1,409 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 4.3
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2020 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+ 
+
+# Make data base, printed on Fri Jul 15 16:35:53 2022
+
+# Variables
+
+# environment
+LC_ALL = C
+# environment
+VSCODE_CWD = /home/dma
+# default
+MAKE_COMMAND := make
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# environment
+GOPATH = /home/dma/go
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# default
+.VARIABLES := 
+# environment
+PWD = /home/dma/dev/sprinkle
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+LSCOLORS = Gxfxcxdxbxegedabagacad
+# environment
+MAIL = /var/spool/mail/dma
+# environment
+OLDPWD = /home/dma
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# automatic
+%F = $(notdir $%)
+# environment
+LANG = C
+# default
+.LOADED := 
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# makefile
+MAKEFLAGS = pqrR
+# makefile
+CURDIR := /home/dma/dev/sprinkle
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# environment
+ZSH_TMUX_TERM = screen
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+MFLAGS = -pqrR
+# environment
+SSH_AUTH_SOCK = /tmp/ssh-XXXXXXZm4iIG/agent.620110
+# default
+.SHELLFLAGS := -c
+# environment
+_ZSH_TMUX_FIXED_CONFIG = /home/dma/.oh-my-zsh/plugins/tmux/tmux.extra.conf
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST := Makefile
+# automatic
+@F = $(notdir $@)
+# environment
+ZSH = /home/dma/.oh-my-zsh
+# environment
+XDG_SESSION_TYPE = tty
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+*F = $(notdir $*)
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# makefile
+SHELL = /bin/sh
+# default
+MAKECMDGOALS := all
+# environment
+DOTNET_BUNDLE_EXTRACT_BASE_DIR = /home/dma/.cache/dotnet_bundle_extract
+# environment
+SHLVL = 2
+# environment
+MAKELEVEL := 0
+# environment
+ZSH_TMUX_CONFIG = /home/dma/.tmux.conf
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+PATH = /home/dma/.vscode-server/bin/b06ae3b2d2dbfe28bca3134cc6be65935cdfea6a/bin/remote-cli:/home/dma/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/home/dma/.dotnet/tools:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/usr/lib/jvm/default/bin
+# default
+MAKEFILES := 
+# environment
+MOTD_SHOWN = pam
+# automatic
+^F = $(notdir $^)
+# environment
+SSH_CLIENT = 192.168.178.43 58271 22
+# automatic
+?F = $(notdir $?)
+# environment
+LS_COLORS = 
+# automatic
++F = $(notdir $+)
+# environment
+LESS = -R
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+BROWSER = /home/dma/.vscode-server/bin/b06ae3b2d2dbfe28bca3134cc6be65935cdfea6a/bin/helpers/browser.sh
+# environment
+LOGNAME = dma
+# makefile
+.DEFAULT_GOAL := all
+# environment
+USER = dma
+# default
+MAKE_VERSION := 4.3
+# environment
+SSH_AGENT_PID = 620112
+# environment
+PAGER = less
+# environment
+VSCODE_AGENT_FOLDER = /home/dma/.vscode-server
+# environment
+_ = /usr/bin/make
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# environment
+LC_CTYPE = 
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-e07fe885-0056-415f-b276-3ebb68e7b58c.sock
+# environment
+GOMODCACHE = /home/dma/go/pkg/mod
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/dma
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# environment
+XDG_SESSION_ID = 360
+# environment
+GOPROXY = https://proxy.golang.org,direct
+# default
+.RECIPEPREFIX := 
+# automatic
+<F = $(notdir $<)
+# makefile (from 'Makefile', line 4)
+OUT = bin
+# default
+SUFFIXES := 
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink guile load
+# environment
+CXX = clang++
+# environment
+CC = clang
+# environment
+DOTNET_ROOT = /usr/share/dotnet
+# environment
+SSH_CONNECTION = 192.168.178.43 58271 192.168.178.4 22
+# variable set hash-table stats:
+# Load=83/1024=8%, Rehash=0, Collisions=4/123=3%
+ 
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# cmd/ui (device 66308, inode 17204280): 4 files, no impossibilities.
+# internal (device 66308, inode 17204289): 5 files, no impossibilities.
+# api/sprinkle (device 66308, inode 17204266): 5 files, no impossibilities.
+# cmd/run (device 66308, inode 17204278): 3 files, no impossibilities.
+# . (device 66308, inode 15498939): 15 files, no impossibilities.
+# cmd/worker (device 66308, inode 17204284): 4 files, no impossibilities.
+
+# 36 files, no impossibilities in 6 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+api/sprinkle/sprinkle_grpc.pb.go: api/sprinkle/sprinkle.proto
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:14:47.253147066
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 21):
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $<
+
+bin/run: internal/discovery.go internal/ip.go internal/worker.go api/sprinkle/sprinkle.pb.go api/sprinkle/sprinkle_grpc.pb.go cmd/run/main.go
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:15:09.929814158
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 28):
+	mkdir -p $(OUT)
+	go build -o $@ ./cmd/run
+
+# Not a target:
+cmd/ui/index.html:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+bin/worker: internal/discovery.go internal/ip.go internal/worker.go api/sprinkle/sprinkle.pb.go api/sprinkle/sprinkle_grpc.pb.go cmd/worker/main.go cmd/worker/server.go
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:15:08.369814129
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 24):
+	mkdir -p $(OUT)
+	go build -o $@ ./cmd/worker
+
+bin/logo.png: assets/donut-with-sprinkles.svg
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:15:11.599814189
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 36):
+	convert -density 1200 -resize 200x200 -background None $< $@
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-07-15 16:35:12.897132552
+#  File has been updated.
+#  Successfully updated.
+
+clean:
+#  Phony target (prerequisite of .PHONY).
+ 
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 17):
+	@rm $(OUT)/*
+	@rm api/sprinkle/*.pb.go
+
+worker: bin/worker
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+ui: bin/ui
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+cmd/run/main.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+internal/discovery.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+internal/worker.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+all: worker run ui
+#  Phony target (prerequisite of .PHONY).
+#  Command line target.
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+run: bin/run
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+cmd/worker/main.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+api/sprinkle/sprinkle.proto:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.131706749
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+internal/ip.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+cmd/ui/main.go:
+#  Implicit rule search has been done.
+ 
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+bin/favicon.ico: assets/donut-with-sprinkles.svg
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:15:11.599814189
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 39):
+	convert -density 1200 -resize 16x16 -background None $< $@
+
+# Not a target:
+assets/donut-with-sprinkles.svg:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+api/sprinkle/sprinkle.pb.go: api/sprinkle/sprinkle.proto
+#  Implicit rule search has not been done.
+#  Last modified 2022-06-22 16:14:47.253147066
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 21):
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $<
+
+bin/ui: internal/discovery.go internal/ip.go internal/worker.go api/sprinkle/sprinkle.pb.go api/sprinkle/sprinkle_grpc.pb.go cmd/ui/main.go cmd/ui/index.html bin/favicon.ico bin/logo.png
+#  Implicit rule search has not been done.
+#  Last modified 2022-07-15 16:35:26.137132801
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 32):
+	mkdir -p $(OUT)
+	go build -o $@ ./cmd/ui
+
+.PHONY: all worker run ui clean
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+cmd/worker/server.go:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-19 17:36:13.135040081
+#  File has been updated.
+#  Successfully updated.
+
+# files hash-table stats:
+# Load=26/1024=3%, Rehash=0, Collisions=2/86=2%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 55 / storage = 648 B / avg = 11 B
+# current buf: size = 8162 B / used = 648 B / count = 55 / avg = 11 B
+
+# strcache performance: lookups = 120 / hit rate = 54%
+# hash-table stats:
+ 
+# Load=55/8192=1%, Rehash=0, Collisions=0/120=0%
+# Finished Make data base on Fri Jul 15 16:35:53 2022
+
+ 

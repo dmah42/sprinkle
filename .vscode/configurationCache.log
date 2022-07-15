@@ -1,0 +1,1 @@
+{"buildTargets":["all","api/sprinkle/sprinkle.pb.go","api/sprinkle/sprinkle_grpc.pb.go","bin/favicon.ico","bin/logo.png","bin/run","bin/ui","bin/worker","clean","run","ui","worker"],"launchTargets":[],"customConfigurationProvider":{"workspaceBrowse":{"browsePath":[],"compilerArgs":[]},"fileIndex":[]}}
